@@ -1,6 +1,6 @@
 import type { SandboxEvent } from "./sandbox";
 
-export type StackFrame = { name: string; line?: number; key: string };
+export type StackFrame = { name: string; line?: number | undefined; key: string };
 export type QueueItem = { id: number; label: string };
 export type LogLine = { level: "log" | "info" | "warn" | "error" | "debug"; text: string; seq: number };
 
@@ -9,8 +9,8 @@ export type LoopState = {
   microtasks: QueueItem[];
   macrotasks: QueueItem[];
   logs: LogLine[];
-  currentLine?: number;
-  heap?: { used: number; total: number; limit: number };
+  currentLine?: number | undefined;
+  heap?: { used: number; total: number; limit: number } | undefined;
   completed: boolean;
 };
 
@@ -35,6 +35,7 @@ export function deriveState(trace: SandboxEvent[], cursor: number): LoopState {
   const upto = Math.min(cursor, trace.length);
   for (let i = 0; i < upto; i++) {
     const e = trace[i];
+    if (!e) continue;
     switch (e.type) {
       case "line":
         currentLine = e.line;
