@@ -44,7 +44,7 @@ function Index() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-panel">
-        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-4 px-4 py-3">
+        <div className="mx-auto flex max-w-350 flex-wrap items-center gap-4 px-4 py-3">
           <div className="flex items-center gap-2.5">
             <span className="grid size-6 place-items-center rounded-[3px] bg-primary text-[11px] font-bold text-primary-foreground">
               JS
@@ -62,7 +62,7 @@ function Index() {
           </p>
         </div>
 
-        <nav className="mx-auto flex max-w-[1400px] items-end gap-px px-4" aria-label="Panels">
+        <nav className="mx-auto flex max-w-350 items-end gap-px px-4" aria-label="Panels">
           {TABS.map((t) => {
             const active = tab === t.id;
             return (
@@ -87,7 +87,7 @@ function Index() {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-[1400px] px-4 py-6">
+      <main className="mx-auto max-w-350 px-4 py-6">
         {tab === "timeline" && (
           <>
             <section className="mb-6 max-w-3xl">
@@ -150,7 +150,7 @@ function Index() {
       </main>
 
       <footer className="mt-8 border-t border-border bg-panel">
-        <div className="mx-auto max-w-[1400px] px-4 py-5 text-[11.5px] leading-relaxed text-muted-foreground">
+        <div className="mx-auto max-w-350 px-4 py-5 text-[11.5px] leading-relaxed text-muted-foreground">
           <p>
             <span className="text-destructive">Uncaught TypeError:</span> Cannot read properties of
             null (reading &apos;author&apos;)
