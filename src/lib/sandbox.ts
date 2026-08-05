@@ -259,9 +259,12 @@ const RUNTIME = `
     s.type = 'module';
     s.id = 'user-code';
     s.async = false;
-    s.textContent =
-      'window.__rt.enter("(main)",1);try{\\n' + data.code + '\\n}finally{window.__rt.exit();' +
-      'window.__done && window.__done();}';
+    var hasModuleSyntax = /^\\s*(import|export)\\s/m.test(data.code);
+    s.textContent = hasModuleSyntax
+      ? data.code + '\\nwindow.__done && window.__done();'
+      : 'window.__rt.enter("(main)",1);try{\\n' + data.code + '\\n}finally{window.__rt.exit();' +
+        'window.__done && window.__done();}';
+
     window.__done = function () { syncDone = true; maybeComplete(); };
     document.body.appendChild(s);
   });
