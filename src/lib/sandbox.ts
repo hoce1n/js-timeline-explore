@@ -371,4 +371,4 @@ const RUNTIME = `
 })();
 `;
 
-export const SANDBOX_HTML = `<!doctype html><html><head><meta charset="utf-8"><title>sandbox</title></head><body><script>${RUNTIME}<\/script></body></html>`;
+export const SANDBOX_HTML = `<!doctype html><html><head><meta charset="utf-8"><title>sandbox</title></head><body><script>${RUNTIME}</script></body></html>`;

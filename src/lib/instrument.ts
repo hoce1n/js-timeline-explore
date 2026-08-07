@@ -1,5 +1,6 @@
 import { parse } from "acorn";
 import * as walk from "acorn-walk";
+import type { AnyNode, BlockStatement, Program } from "acorn";
 
 /**
  * Rewrites user source so the sandbox runtime can report *real* execution
@@ -17,18 +18,28 @@ const FUNCTION_TYPES = new Set([
   "ArrowFunctionExpression",
 ]);
 
-function functionName(node: any, ancestors: any[]): string {
-  if (node.id?.name) return node.id.name;
+type FunctionLikeNode = Extract<AnyNode, { type: "FunctionDeclaration" | "FunctionExpression" | "ArrowFunctionExpression" }>;
+
+type AcornSyntaxError = Error & { loc?: { line?: number } };
+
+/** Best-effort human name for a function's key expression (`foo` in `{ foo() {} }`). */
+function propertyName(key: AnyNode): string | undefined {
+  if (key.type === "Identifier" || key.type === "PrivateIdentifier") return key.name;
+  if (key.type === "Literal") return key.value == null ? undefined : String(key.value);
+  return undefined;
+}
+
+function functionName(node: FunctionLikeNode, ancestors: AnyNode[]): string {
+  if (node.type !== "ArrowFunctionExpression" && node.id?.name) return node.id.name;
   const parent = ancestors[ancestors.length - 2];
   if (parent) {
-    if (parent.type === "VariableDeclarator" && parent.id?.name) return parent.id.name;
-    if (parent.type === "Property" && parent.key) {
-      return parent.key.name ?? parent.key.value ?? "anonymous";
+    if (parent.type === "VariableDeclarator" && parent.id.type === "Identifier") {
+      return parent.id.name;
     }
-    if (parent.type === "MethodDefinition" && parent.key) {
-      return parent.key.name ?? parent.key.value ?? "anonymous";
+    if (parent.type === "Property" || parent.type === "MethodDefinition") {
+      return propertyName(parent.key) ?? "anonymous";
     }
-    if (parent.type === "AssignmentExpression" && parent.left?.type === "Identifier") {
+    if (parent.type === "AssignmentExpression" && parent.left.type === "Identifier") {
       return parent.left.name;
     }
   }
@@ -40,7 +51,7 @@ export type InstrumentResult =
   | { ok: false; error: string; line?: number };
 
 export function instrument(source: string): InstrumentResult {
-  let ast: any;
+  let ast: Program;
   try {
     ast = parse(source, {
       ecmaVersion: "latest",
@@ -49,20 +60,19 @@ export function instrument(source: string): InstrumentResult {
       allowAwaitOutsideFunction: true,
       allowReturnOutsideFunction: true,
     });
-  } catch (err: any) {
-    return {
-      ok: false,
-      error: err?.message ?? "SyntaxError",
-      line: err?.loc?.line,
-    };
+  } catch (err: unknown) {
+    const e = err as AcornSyntaxError;
+    return e.loc?.line === undefined
+      ? { ok: false, error: e.message }
+      : { ok: false, error: e.message, line: e.loc.line };
   }
 
   const edits: Insertion[] = [];
   let order = 0;
   const push = (pos: number, text: string) => edits.push({ pos, text, order: order++ });
 
-  const markBlock = (node: any) => {
-    for (const stmt of node.body ?? []) {
+  const markBlock = (node: Program | BlockStatement) => {
+    for (const stmt of node.body) {
       if (
         stmt.type === "FunctionDeclaration" ||
         stmt.type === "ImportDeclaration" ||
@@ -70,32 +80,31 @@ export function instrument(source: string): InstrumentResult {
       ) {
         continue;
       }
-      push(stmt.start, `__rt.line(${stmt.loc.start.line});`);
+      push(stmt.start, `__rt.line(${stmt.loc?.start.line});`);
     }
   };
 
-  walk.ancestor(ast, {
-    Program: markBlock as any,
-    BlockStatement: markBlock as any,
-    AwaitExpression(node: any) {
+  function fnVisitor(node: FunctionLikeNode, _state: unknown, ancestors: AnyNode[]) {
+    if (!FUNCTION_TYPES.has(node.type)) return;
+    if (node.body.type !== "BlockStatement") return;
+    const name = functionName(node, ancestors);
+    push(node.body.start + 1, `__rt.enter(${JSON.stringify(name)},${node.loc?.start.line});try{`);
+    push(node.body.end - 1, `}finally{__rt.exit();}`);
+  }
+
+  const visitors: walk.AncestorVisitors<unknown> = {
+    Program: markBlock,
+    BlockStatement: markBlock,
+    AwaitExpression(node) {
       push(node.argument.start, "__rt.aw(");
-      push(node.argument.end, `,${node.loc.start.line})`);
+      push(node.argument.end, `,${node.loc?.start.line})`);
     },
     FunctionDeclaration: fnVisitor,
     FunctionExpression: fnVisitor,
     ArrowFunctionExpression: fnVisitor,
-  } as any);
+  };
 
-  function fnVisitor(node: any, _state: unknown, ancestors: any[]) {
-    if (!FUNCTION_TYPES.has(node.type)) return;
-    if (node.body?.type !== "BlockStatement") return;
-    const name = functionName(node, ancestors);
-    push(
-      node.body.start + 1,
-      `__rt.enter(${JSON.stringify(name)},${node.loc.start.line});try{`,
-    );
-    push(node.body.end - 1, `}finally{__rt.exit();}`);
-  }
+  walk.ancestor(ast, visitors);
 
   edits.sort((a, b) => b.pos - a.pos || b.order - a.order);
 

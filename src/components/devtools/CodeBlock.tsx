@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import type { Highlighter } from "shiki";
 
-let highlighterPromise: Promise<any> | null = null;
+let highlighterPromise: Promise<Highlighter> | null = null;
 
 async function getHighlighter() {
   if (!highlighterPromise) {
