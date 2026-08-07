@@ -12,4 +12,10 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    server: {
+      // Preview environments serve the app through a *.monkeycode-ai.live host.
+      allowedHosts: [".monkeycode-ai.live"],
+    },
+  },
 });
