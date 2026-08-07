@@ -11,6 +11,8 @@ export type LoopState = {
   logs: LogLine[];
   currentLine?: number | undefined;
   heap?: { used: number; total: number; limit: number } | undefined;
+  elapsedMs?: number | undefined;
+  currentTime?: number | undefined;
   completed: boolean;
 };
 
@@ -31,11 +33,15 @@ export function deriveState(trace: SandboxEvent[], cursor: number): LoopState {
   let currentLine: number | undefined;
   let heap: LoopState["heap"];
   let completed = false;
+  let firstTime: number | undefined;
+  let lastTime: number | undefined;
 
   const upto = Math.min(cursor, trace.length);
   for (let i = 0; i < upto; i++) {
     const e = trace[i];
     if (!e) continue;
+    if (firstTime === undefined) firstTime = e.t;
+    lastTime = e.t;
     switch (e.type) {
       case "line":
         currentLine = e.line;
@@ -74,7 +80,17 @@ export function deriveState(trace: SandboxEvent[], cursor: number): LoopState {
     }
   }
 
-  return { stack, microtasks, macrotasks, logs, currentLine, heap, completed };
+  return {
+    stack,
+    microtasks,
+    macrotasks,
+    logs,
+    currentLine,
+    heap,
+    elapsedMs: firstTime === undefined || lastTime === undefined ? undefined : lastTime - firstTime,
+    currentTime: lastTime,
+    completed,
+  };
 }
 
 function remove(list: QueueItem[], id?: number) {

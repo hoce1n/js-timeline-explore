@@ -41,6 +41,7 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
   const recording = mode === "step" && status === "running";
   const canStep = mode === "step" && trace.length > 0 && status !== "running";
   const lastEvent = cursor > 0 ? trace[cursor - 1] : undefined;
+  const prevEvent = cursor > 1 ? trace[cursor - 2] : undefined;
 
   const handleRun = () => {
     setCursor(0);
@@ -183,6 +184,14 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
           <div className="border-t border-border bg-card px-3 py-2 text-[11.5px] text-panel-foreground">
             <span className="text-secondary">step&gt;</span>{" "}
             {lastEvent ? describeEvent(lastEvent) : "before first instruction"}
+            {lastEvent && (
+              <span className="ml-1 text-muted-foreground">
+                · at {lastEvent.t.toFixed(1)}ms
+                {cursor > 1 && prevEvent
+                  ? ` (+${(lastEvent.t - prevEvent.t).toFixed(1)}ms)`
+                  : ""}
+              </span>
+            )}
           </div>
         )}
       </div>
@@ -337,7 +346,9 @@ function LoopPanel({
       <div className="bg-panel px-3 py-2 text-[11px] text-muted-foreground">
         {traceLength === 0
           ? "No trace recorded. Every frame and queue entry below comes from your code's real execution."
-          : `${traceLength} instrumented events recorded${state.completed ? " · queues drained" : ""}`}
+          : `${traceLength} instrumented events recorded${
+              state.elapsedMs !== undefined ? ` · ${state.elapsedMs.toFixed(2)}ms elapsed` : ""
+            }${state.completed ? " · queues drained" : ""}`}
       </div>
     </div>
   );
