@@ -1,8 +1,9 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ClientOnly } from "@tanstack/react-router";
 import { Timeline } from "@/components/devtools/Timeline";
 import { REPL_EXAMPLES } from "@/lib/js-eras";
+import { encodeCode, readCodeFromHash } from "@/lib/share";
 
 const Workbench = lazy(() => import("@/components/devtools/Workbench"));
 
@@ -40,7 +41,31 @@ const TABS: { id: Tab; label: string; hint: string }[] = [
 
 function Index() {
   const [tab, setTab] = useState<Tab>("timeline");
-  const [code, setCode] = useState(REPL_EXAMPLES[0]!.code);
+  const [code, setCode] = useState(() =>
+    typeof window === "undefined"
+      ? REPL_EXAMPLES[0]!.code
+      : (readCodeFromHash(window.location.hash) ?? REPL_EXAMPLES[0]!.code),
+  );
+
+  // Keep the shareable hash in sync with the editor (debounced, no history spam).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const timer = setTimeout(() => {
+      const hash = `#code=${encodeCode(code)}`;
+      if (window.location.hash !== hash) history.replaceState(null, "", hash);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [code]);
+
+  // Opening a shared link updates the editor without a reload.
+  useEffect(() => {
+    const onHash = () => {
+      const fromHash = readCodeFromHash(window.location.hash);
+      if (fromHash !== null) setCode(fromHash);
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
 
   const runInConsole = (snippet: string) => {
     setCode(snippet);

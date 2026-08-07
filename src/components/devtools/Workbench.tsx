@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Play, SkipBack, SkipForward, RotateCcw, Square, Zap, Terminal, Trash2 } from "lucide-react";
+import { Play, SkipBack, SkipForward, RotateCcw, Square, Zap, Terminal, Trash2, Link2, Check } from "lucide-react";
 import CodeEditor from "./CodeEditor";
 import { useSandbox } from "@/hooks/use-sandbox";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { deriveState, describeEvent } from "@/lib/event-loop";
 import { REPL_EXAMPLES } from "@/lib/js-eras";
+import { buildShareUrl, copyText } from "@/lib/share";
 
 type Props = {
   code: string;
@@ -17,7 +18,9 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
   const [mode, setMode] = useState<"run" | "step">("run");
   const [cursor, setCursor] = useState(0);
   const [consoleClearSeq, setConsoleClearSeq] = useState(0);
+  const [copiedLink, setCopiedLink] = useState(false);
   const logRef = useRef<HTMLDivElement | null>(null);
+  const linkResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -27,6 +30,13 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
   useEffect(() => {
     if (trace.length === 0) setConsoleClearSeq(0);
   }, [trace.length]);
+
+  useEffect(
+    () => () => {
+      if (linkResetTimer.current) clearTimeout(linkResetTimer.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (mode === "step" && status === "running") setCursor(0);
@@ -51,6 +61,13 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
   const handleClearConsole = () => {
     const lastSeq = state.logs.reduce((max, l) => Math.max(max, l.seq), 0);
     setConsoleClearSeq(lastSeq);
+  };
+
+  const handleShare = async () => {
+    await copyText(buildShareUrl(code));
+    setCopiedLink(true);
+    if (linkResetTimer.current) clearTimeout(linkResetTimer.current);
+    linkResetTimer.current = setTimeout(() => setCopiedLink(false), 1500);
   };
 
   const hasVisibleLogs = state.logs.some((l) => l.seq > consoleClearSeq);
@@ -118,6 +135,15 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
             className="inline-flex items-center gap-1.5 rounded-sm border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
           >
             <RotateCcw className="size-3.5" /> clear
+          </button>
+
+          <button
+            onClick={handleShare}
+            title="Copy a share link with this code embedded"
+            className="inline-flex items-center gap-1.5 rounded-sm border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {copiedLink ? <Check className="size-3.5" /> : <Link2 className="size-3.5" />}
+            {copiedLink ? "copied" : "share"}
           </button>
 
           <span className="ml-auto flex items-center gap-1.5 text-[11px] text-muted-foreground">
