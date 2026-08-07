@@ -505,5 +505,65 @@ Promise.resolve().then(() => console.log("tick B"));`,
 main();
 console.log("sync tail");`,
   },
+  {
+    id: "errors",
+    label: "error handling",
+    code: `function risky(flag) {
+  if (flag) throw new Error("boom at level 1");
+  return "ok";
+}
+
+try {
+  console.log(risky(true));
+} catch (err) {
+  console.log("caught:", err.message);
+}
+
+// Unhandled: surfaces as an error event in the console.
+throw new Error("uncaught — reported by the sandbox");`,
+  },
+  {
+    id: "recursion",
+    label: "recursion & stack",
+    code: `let depth = 0;
+let peak = 0;
+
+function fib(n) {
+  depth++;
+  peak = Math.max(peak, depth);
+  const result = n < 2 ? n : fib(n - 1) + fib(n - 2);
+  depth--;
+  return result;
+}
+
+console.log("fib(10) =", fib(10));
+console.log("peak recursion depth:", peak);
+// Step through the trace to watch the call stack grow and unwind.`,
+  },
+  {
+    id: "async-iter",
+    label: "async iteration",
+    code: `async function* ticks(count) {
+  for (let i = 1; i <= count; i++) {
+    await null; // suspends — resumes as a microtask
+    yield i;
+  }
+}
+
+for await (const tick of ticks(3)) {
+  console.log("tick", tick);
+}
+console.log("done iterating");`,
+  },
+  {
+    id: "intervals",
+    label: "setInterval tasks",
+    code: `let n = 0;
+const handle = setInterval(() => {
+  console.log("interval tick", ++n);
+  if (n === 3) clearInterval(handle);
+}, 50);
+console.log("interval scheduled — watch the macrotask queue");`,
+  },
 ];
 
