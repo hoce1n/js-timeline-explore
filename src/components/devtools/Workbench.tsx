@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Play, SkipBack, SkipForward, RotateCcw, Square, Zap, Terminal } from "lucide-react";
+import { Play, SkipBack, SkipForward, RotateCcw, Square, Zap, Terminal, Trash2 } from "lucide-react";
 import CodeEditor from "./CodeEditor";
 import { useSandbox } from "@/hooks/use-sandbox";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -16,12 +16,17 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
   const { hostRef, status, trace, run, reset } = useSandbox();
   const [mode, setMode] = useState<"run" | "step">("run");
   const [cursor, setCursor] = useState(0);
+  const [consoleClearSeq, setConsoleClearSeq] = useState(0);
   const logRef = useRef<HTMLDivElement | null>(null);
   const isMobile = useIsMobile();
 
   useEffect(() => {
     if (mode === "run") setCursor(trace.length);
   }, [trace, mode]);
+
+  useEffect(() => {
+    if (trace.length === 0) setConsoleClearSeq(0);
+  }, [trace.length]);
 
   useEffect(() => {
     if (mode === "step" && status === "running") setCursor(0);
@@ -41,6 +46,13 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
     setCursor(0);
     run(code);
   };
+
+  const handleClearConsole = () => {
+    const lastSeq = state.logs.reduce((max, l) => Math.max(max, l.seq), 0);
+    setConsoleClearSeq(lastSeq);
+  };
+
+  const hasVisibleLogs = state.logs.some((l) => l.seq > consoleClearSeq);
 
   return (
     <div className="grid gap-px overflow-hidden rounded-sm border border-border bg-border lg:grid-cols-2">
@@ -181,15 +193,32 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
           {view === "console" ? <Terminal className="size-3.5" /> : <Zap className="size-3.5" />}
           {view === "console" ? "Console output" : "Event loop — live instrumentation"}
           {recording && <span className="ml-auto text-warning">recording…</span>}
-          {state.heap && (
+          {view === "console" ? (
+            <button
+              onClick={handleClearConsole}
+              disabled={!hasVisibleLogs}
+              title="Clear console output"
+              className={`inline-flex items-center gap-1 rounded-sm border border-border px-1.5 py-0.5 text-[11px] transition-colors hover:text-foreground disabled:opacity-40 ${
+                recording ? "" : "ml-auto"
+              }`}
+            >
+              <Trash2 className="size-3" /> clear
+            </button>
+          ) : state.heap ? (
             <span className="ml-auto text-[11px]">
               heap {(state.heap.used / 1048576).toFixed(1)} MB
             </span>
-          )}
+          ) : null}
         </div>
 
         {view === "console" ? (
-          <ConsolePanel logs={state.logs} logRef={logRef} status={status} traceLength={trace.length} />
+          <ConsolePanel
+            logs={state.logs}
+            clearAfterSeq={consoleClearSeq}
+            logRef={logRef}
+            status={status}
+            traceLength={trace.length}
+          />
         ) : (
           <LoopPanel state={state} traceLength={trace.length} />
         )}
@@ -201,20 +230,23 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
 }
 
 function ConsolePanel({
-
   logs,
+  clearAfterSeq,
   logRef,
   status,
   traceLength,
 }: {
   logs: ReturnType<typeof deriveState>["logs"];
+  clearAfterSeq: number;
   logRef: React.RefObject<HTMLDivElement | null>;
   status: string;
   traceLength: number;
 }) {
   const MAX_RENDERED_LOGS = 1000;
-  const hidden = Math.max(0, logs.length - MAX_RENDERED_LOGS);
-  const visible = hidden > 0 ? logs.slice(logs.length - MAX_RENDERED_LOGS) : logs;
+  const visibleLogs = logs.filter((log) => log.seq > clearAfterSeq);
+  const cleared = clearAfterSeq > 0;
+  const hidden = Math.max(0, visibleLogs.length - MAX_RENDERED_LOGS);
+  const shown = hidden > 0 ? visibleLogs.slice(visibleLogs.length - MAX_RENDERED_LOGS) : visibleLogs;
   return (
     <>
       <p className="border-b border-border/60 bg-panel/60 px-3 py-1 text-[11px] text-muted-foreground">
@@ -222,14 +254,19 @@ function ConsolePanel({
       </p>
     <div ref={logRef} className="min-h-0 flex-1 overflow-auto px-3 py-2 text-[12.5px] leading-relaxed">
 
-      {logs.length === 0 && traceLength === 0 && (
+      {visibleLogs.length === 0 && logs.length === 0 && traceLength === 0 && (
         <p className="text-muted-foreground">
           <span className="text-secondary">&gt;</span> nothing logged yet — hit Run.
         </p>
       )}
-      {logs.length === 0 && traceLength > 0 && status !== "running" && (
+      {visibleLogs.length === 0 && logs.length === 0 && traceLength > 0 && status !== "running" && !cleared && (
         <p className="text-muted-foreground">
           <span className="text-secondary">&gt;</span> executed with no console output.
+        </p>
+      )}
+      {cleared && visibleLogs.length === 0 && logs.length > 0 && (
+        <p className="text-muted-foreground">
+          <span className="text-secondary">&gt;</span> console cleared — rerun to capture more output.
         </p>
       )}
       {hidden > 0 && (
@@ -238,7 +275,7 @@ function ConsolePanel({
           {MAX_RENDERED_LOGS})
         </p>
       )}
-      {visible.map((log) => (
+      {shown.map((log) => (
         <div
           key={log.seq}
           className={`flex gap-2 border-b border-border/40 py-1 font-mono ${
