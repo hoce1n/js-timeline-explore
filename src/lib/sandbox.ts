@@ -30,6 +30,7 @@ export type SandboxEvent = {
 const RUNTIME = `
 (function () {
   var seq = 0, runId = null, taskId = 0, pending = 0, syncDone = false, completed = false;
+  var EMIT_BUDGET = 4000;
   var stack = [];
   var rawThen = Promise.prototype.then;
   var rawST = window.setTimeout.bind(window);
