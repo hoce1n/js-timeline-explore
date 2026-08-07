@@ -97,6 +97,8 @@ export function useSandbox() {
   const run = useCallback((source: string) => {
     const result = instrument(source);
     runIdRef.current += 1;
+    bufferRef.current = [];
+    truncatedRef.current = false;
     if (!result.ok) {
       setTrace([
         {
