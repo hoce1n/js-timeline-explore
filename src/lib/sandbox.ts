@@ -92,19 +92,16 @@ const RUNTIME = `
     };
   });
 
-  window.setTimeout = function (fn, ms) {
-    var extra = Array.prototype.slice.call(arguments, 2);
-    var delay = ms || 0;
+  function scheduleMacrotask(fn, delay, label, frameName, extra) {
     var id = ++taskId;
     pending++;
-    emit('macrotask-enqueue', { id: id, label: 'setTimeout ' + delay + 'ms' });
+    emit('macrotask-enqueue', { id: id, label: label });
     return rawST(function () {
       emit('macrotask-run', { id: id });
-      stack.push('setTimeout callback');
-      emit('stack-push', { name: 'setTimeout callback' });
+      stack.push(frameName);
+      emit('stack-push', { name: frameName });
       try {
-        if (typeof fn === 'function') fn.apply(null, extra);
-        else if (typeof fn === 'string') (0, eval)(fn);
+        fn.apply(null, extra || []);
       } catch (err) {
         emit('error', { text: 'Uncaught ' + (err && err.name ? err.name : 'Error') + ': ' + (err && err.message) });
       } finally {
@@ -115,8 +112,17 @@ const RUNTIME = `
         maybeComplete();
       }
     }, delay);
+  }
+
+  window.setTimeout = function (fn, ms) {
+    var extra = Array.prototype.slice.call(arguments, 2);
+    var delay = ms || 0;
+    var run = typeof fn === 'function' ? fn : function () { (0, eval)(String(fn)); };
+    return scheduleMacrotask(run, delay, 'setTimeout ' + delay + 'ms', 'setTimeout callback', extra);
   };
+
   window.clearTimeout = rawCT;
+
 
   var intervalTicks = 0;
   window.setInterval = function (fn, ms) {
@@ -196,6 +202,91 @@ const RUNTIME = `
       wrapReaction(id, onRejected, '.catch callback', true)
     );
   };
+
+  // --- Promise combinators -------------------------------------------------
+  // Implemented on top of the *raw* then so a single logical settlement shows
+  // up as one labelled microtask instead of N anonymous ".then reaction"s.
+  function combinator(name, iterable, mode) {
+    var items;
+    try { items = Array.prototype.slice.call(iterable); }
+    catch (e) { return Promise.reject(new TypeError(String(iterable) + ' is not iterable')); }
+
+    var id = ++taskId;
+    pending++;
+    var settled = false;
+    var results = new Array(items.length);
+    var remaining = items.length;
+    var resolveOuter, rejectOuter;
+    var outer = new Promise(function (res, rej) { resolveOuter = res; rejectOuter = rej; });
+
+    function finish(reject, value, verb) {
+      if (settled) return;
+      settled = true;
+      emit('microtask-enqueue', { id: id, label: 'Promise.' + name + ' ' + verb + ' (' + items.length + ')' });
+      emit('microtask-run', { id: id });
+      if (reject) rejectOuter(value); else resolveOuter(value);
+      emit('microtask-end', { id: id });
+      pending--;
+      maybeComplete();
+    }
+
+    if (items.length === 0) {
+      if (mode === 'all' || mode === 'allSettled') finish(false, [], 'settled');
+      else if (mode === 'any') finish(true, new AggregateError([], 'All promises were rejected'), 'rejected');
+      else { pending--; } // race([]) stays pending forever, like the real thing
+      return outer;
+    }
+
+    items.forEach(function (item, i) {
+      rawThen.call(
+        Promise.resolve(item),
+        function (v) {
+          if (mode === 'race' || mode === 'any') return finish(false, v, 'settled');
+          results[i] = mode === 'allSettled' ? { status: 'fulfilled', value: v } : v;
+          if (--remaining === 0) finish(false, results, 'settled');
+        },
+        function (e) {
+          if (mode === 'all' || mode === 'race') return finish(true, e, 'rejected');
+          if (mode === 'allSettled') {
+            results[i] = { status: 'rejected', reason: e };
+            if (--remaining === 0) finish(false, results, 'settled');
+            return;
+          }
+          results[i] = e; // any
+          if (--remaining === 0) finish(true, new AggregateError(results, 'All promises were rejected'), 'rejected');
+        }
+      );
+    });
+
+    return outer;
+  }
+
+  Promise.all = function (it) { return combinator('all', it, 'all'); };
+  Promise.race = function (it) { return combinator('race', it, 'race'); };
+  Promise.allSettled = function (it) { return combinator('allSettled', it, 'allSettled'); };
+  Promise.any = function (it) { return combinator('any', it, 'any'); };
+
+  // --- fetch (mocked: the sandboxed iframe has no network access) ----------
+  var RawResponse = window.Response;
+  window.fetch = function (input, init) {
+    var url = typeof input === 'string' ? input : (input && input.url) || String(input);
+    var cfgs = window.__mockFetch || {};
+    var cfg = cfgs[url] || cfgs['*'] || {};
+    var delay = cfg.delay === undefined ? 120 : cfg.delay;
+    var status = cfg.status === undefined ? 200 : cfg.status;
+    var body = cfg.body === undefined ? { ok: true, url: url, data: [1, 2, 3] } : cfg.body;
+    var method = (init && init.method) || 'GET';
+    return new Promise(function (resolve) {
+      scheduleMacrotask(function () {
+        resolve(new RawResponse(typeof body === 'string' ? body : JSON.stringify(body), {
+          status: status,
+          headers: { 'content-type': 'application/json' }
+        }));
+      }, delay, 'fetch ' + method + ' ' + url + ' (mocked)', 'fetch response', []);
+    });
+  };
+
+
 
   window.__rt = {
     line: function (n) { emit('line', { line: n }); },

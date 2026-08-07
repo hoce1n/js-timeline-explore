@@ -436,4 +436,74 @@ delay(10, "first")
   .then((v) => { console.log(v); throw new Error("boom"); })
   .catch((err) => console.log("caught:", err.message));`,
   },
+  {
+    id: "combinators",
+    label: "promise combinators",
+    code: `const ok = (v, ms) => new Promise((r) => setTimeout(() => r(v), ms));
+const bad = (v, ms) => new Promise((_, r) => setTimeout(() => r(new Error(v)), ms));
+
+Promise.all([ok("a", 10), ok("b", 20)]).then((v) => console.log("all:", v));
+Promise.race([ok("slow", 30), bad("fast", 5)]).catch((e) => console.log("race rejected:", e.message));
+Promise.allSettled([ok("x", 5), bad("y", 5)]).then((v) => console.log("allSettled:", v.map((r) => r.status)));
+Promise.any([bad("p", 5), ok("q", 15)]).then((v) => console.log("any:", v));
+Promise.any([bad("only", 5)]).catch((e) => console.log("any rejected:", e.constructor.name, e.errors.length));`,
+  },
+  {
+    id: "fetch",
+    label: "fetch (mocked)",
+    code: `// fetch is mocked in this sandbox — no network access.
+// The "network" wait is a real macrotask; the resolution is a real microtask.
+async function load() {
+  console.log("before fetch");
+  const res = await fetch("/api/items");
+  console.log("status", res.status);
+  const json = await res.json();
+  console.log("body", json);
+}
+
+load();
+console.log("sync tail");`,
+  },
+  {
+    id: "throwing-chain",
+    label: "throwing chain",
+    code: `Promise.resolve("start")
+  .then((v) => { console.log("first", v); throw new Error("boom"); })
+  .then(() => console.log("skipped — rejected chains bypass onFulfilled"))
+  .catch((err) => console.log("caught:", err.message));`,
+  },
+  {
+    id: "nested-reactions",
+    label: "nested reactions",
+    code: `Promise.resolve(1).then((v) => {
+  console.log("outer", v);
+  // a *nested* promise created inside the reaction and returned:
+  // adopting it costs extra microtask ticks before the next .then runs
+  return Promise.resolve(v + 1).then((inner) => {
+    console.log("inner", inner);
+    return inner * 10;
+  });
+}).then((v) => console.log("after adoption", v));
+
+Promise.resolve().then(() => console.log("tick A"));
+Promise.resolve().then(() => console.log("tick B"));`,
+  },
+  {
+    id: "await-reject",
+    label: "await + try/catch",
+    code: `async function main() {
+  try {
+    await Promise.reject(new Error("rejected inside await"));
+    console.log("unreachable");
+  } catch (err) {
+    console.log("caught:", err.message);
+  } finally {
+    console.log("finally runs after resume");
+  }
+}
+
+main();
+console.log("sync tail");`,
+  },
 ];
+
