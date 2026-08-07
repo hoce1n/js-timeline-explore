@@ -52,13 +52,23 @@ type Props = {
   activeLine?: number | null;
   readOnly?: boolean;
   minHeight?: string;
+  onRun?: () => void;
 };
 
-export default function CodeEditor({ value, onChange, activeLine, readOnly, minHeight }: Props) {
+export default function CodeEditor({
+  value,
+  onChange,
+  activeLine,
+  readOnly,
+  minHeight,
+  onRun,
+}: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const onRunRef = useRef(onRun);
+  onRunRef.current = onRun;
 
   useEffect(() => {
     if (!hostRef.current) return;
@@ -75,7 +85,19 @@ export default function CodeEditor({ value, onChange, activeLine, readOnly, minH
       oneDark,
       baseTheme,
       activeLineField,
-      keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap, indentWithTab]),
+      keymap.of([
+        ...closeBracketsKeymap,
+        ...defaultKeymap,
+        ...historyKeymap,
+        indentWithTab,
+        {
+          key: "Mod-Enter",
+          run: () => {
+            onRunRef.current?.();
+            return true;
+          },
+        },
+      ]),
       EditorView.lineWrapping,
       EditorState.readOnly.of(Boolean(readOnly)),
       EditorView.updateListener.of((update) => {

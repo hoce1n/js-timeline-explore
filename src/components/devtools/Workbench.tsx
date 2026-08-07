@@ -50,6 +50,7 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
           <button
             onClick={handleRun}
             disabled={status === "booting"}
+            title="Run (Ctrl/Cmd+Enter)"
             className="inline-flex items-center gap-1.5 rounded-sm bg-primary px-2.5 py-1 text-xs font-bold text-primary-foreground transition-opacity hover:opacity-85 disabled:opacity-40"
           >
             <Play className="size-3.5" />
@@ -119,6 +120,9 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
               }`}
             />
             sandbox: {status}
+            <span className="ml-1 hidden rounded-sm border border-border px-1 py-px text-[10px] sm:inline">
+              ⌘/Ctrl⏎ run
+            </span>
           </span>
         </div>
 
@@ -126,6 +130,7 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
           <CodeEditor
             value={code}
             onChange={onCodeChange}
+            onRun={handleRun}
             activeLine={mode === "step" ? (state.currentLine ?? null) : null}
             minHeight={isMobile ? "220px" : "440px"}
           />
