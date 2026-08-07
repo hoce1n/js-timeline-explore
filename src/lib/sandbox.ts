@@ -30,6 +30,7 @@ export type SandboxEvent = {
 const RUNTIME = `
 (function () {
   var seq = 0, runId = null, taskId = 0, pending = 0, syncDone = false, completed = false;
+  var EMIT_BUDGET = 4000;
   var stack = [];
   var rawThen = Promise.prototype.then;
   var rawST = window.setTimeout.bind(window);
@@ -38,10 +39,14 @@ const RUNTIME = `
   var rawConsole = { log: console.log.bind(console) };
 
   function emit(type, data) {
+    // Budget guard: floods of instrumentation (deep recursion, tight loops) would
+    // otherwise drown the terminal events the host needs to report the result.
+    if (seq >= EMIT_BUDGET && type !== 'error' && type !== 'complete') { seq++; return; }
     var e = { seq: seq++, t: Math.round(performance.now() * 1000) / 1000, type: type };
     if (data) { for (var k in data) e[k] = data[k]; }
     parent.postMessage({ __jsSandbox: true, runId: runId, event: e }, '*');
   }
+
 
   function fmt(v, depth) {
     depth = depth || 0;

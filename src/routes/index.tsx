@@ -68,7 +68,7 @@ function Index() {
           </p>
         </div>
 
-        <nav className="mx-auto flex max-w-350 items-end gap-px px-4" aria-label="Panels">
+        <nav className="mx-auto flex max-w-350 items-end gap-px overflow-x-auto px-4" aria-label="Panels">
           {TABS.map((t) => {
             const active = tab === t.id;
             return (
@@ -76,7 +76,7 @@ function Index() {
                 key={t.id}
                 onClick={() => setTab(t.id)}
                 aria-current={active ? "page" : undefined}
-                className={`group relative -mb-px border border-b-0 px-3.5 py-2 text-xs transition-colors ${
+                className={`group relative -mb-px shrink-0 whitespace-nowrap border border-b-0 px-3 py-2 text-xs transition-colors sm:px-3.5 ${
                   active
                     ? "border-border bg-background text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground"

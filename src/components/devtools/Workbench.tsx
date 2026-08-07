@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Play, SkipBack, SkipForward, RotateCcw, Square, Zap, Terminal } from "lucide-react";
 import CodeEditor from "./CodeEditor";
 import { useSandbox } from "@/hooks/use-sandbox";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { deriveState, describeEvent } from "@/lib/event-loop";
 import { REPL_EXAMPLES } from "@/lib/js-eras";
 
@@ -16,6 +17,7 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
   const [mode, setMode] = useState<"run" | "step">("run");
   const [cursor, setCursor] = useState(0);
   const logRef = useRef<HTMLDivElement | null>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (mode === "run") setCursor(trace.length);
@@ -43,7 +45,7 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
   return (
     <div className="grid gap-px overflow-hidden rounded-sm border border-border bg-border lg:grid-cols-2">
       {/* editor column */}
-      <div className="flex min-h-[520px] flex-col bg-card">
+      <div className="flex min-h-[300px] flex-col bg-card lg:min-h-[520px]">
         <div className="flex flex-wrap items-center gap-2 border-b border-border bg-panel px-3 py-2">
           <button
             onClick={handleRun}
@@ -125,7 +127,7 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
             value={code}
             onChange={onCodeChange}
             activeLine={mode === "step" ? (state.currentLine ?? null) : null}
-            minHeight="440px"
+            minHeight={isMobile ? "220px" : "440px"}
           />
         </div>
 
@@ -169,7 +171,7 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
       </div>
 
       {/* output column */}
-      <div className="flex min-h-[520px] flex-col bg-card">
+      <div className="flex min-h-[300px] flex-col bg-card lg:min-h-[520px]">
         <div className="flex items-center gap-2 border-b border-border bg-panel px-3 py-2 text-xs text-muted-foreground">
           {view === "console" ? <Terminal className="size-3.5" /> : <Zap className="size-3.5" />}
           {view === "console" ? "Console output" : "Event loop — live instrumentation"}
@@ -205,6 +207,9 @@ function ConsolePanel({
   status: string;
   traceLength: number;
 }) {
+  const MAX_RENDERED_LOGS = 1000;
+  const hidden = Math.max(0, logs.length - MAX_RENDERED_LOGS);
+  const visible = hidden > 0 ? logs.slice(logs.length - MAX_RENDERED_LOGS) : logs;
   return (
     <>
       <p className="border-b border-border/60 bg-panel/60 px-3 py-1 text-[11px] text-muted-foreground">
@@ -222,7 +227,13 @@ function ConsolePanel({
           <span className="text-secondary">&gt;</span> executed with no console output.
         </p>
       )}
-      {logs.map((log) => (
+      {hidden > 0 && (
+        <p className="mb-1 border-b border-border/40 py-1 text-[11px] text-warning">
+          output truncated — {hidden} earlier line{hidden === 1 ? "" : "s"} hidden (showing last{" "}
+          {MAX_RENDERED_LOGS})
+        </p>
+      )}
+      {visible.map((log) => (
         <div
           key={log.seq}
           className={`flex gap-2 border-b border-border/40 py-1 font-mono ${

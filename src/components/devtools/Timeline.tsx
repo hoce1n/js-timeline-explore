@@ -126,7 +126,7 @@ function ConceptRow({ concept, onRun }: { concept: Concept; onRun: (code: string
                     <tr key={row.runtime} className="border-b border-border last:border-0">
                       <th
                         scope="row"
-                        className={`w-24 whitespace-nowrap border-r border-border px-3 py-2 align-top font-medium ${
+                        className={`w-20 border-r border-border px-3 py-2 align-top font-medium md:w-24 md:whitespace-nowrap ${
                           RUNTIME_COLOR[row.runtime] ?? "text-foreground"
                         }`}
                       >
