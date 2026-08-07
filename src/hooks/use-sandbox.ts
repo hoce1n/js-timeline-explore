@@ -38,7 +38,20 @@ export function useSandbox() {
       }
       if (data.runId !== runIdRef.current) return;
       const event = data.event as SandboxEvent;
-      setTrace((prev) => (prev.length >= MAX_EVENTS ? prev : [...prev, event]));
+      setTrace((prev) => {
+        if (prev.length < MAX_EVENTS) return [...prev, event];
+        // past the cap: still let terminal events (errors / completion) through,
+        // otherwise heavy code (deep recursion, tight loops) silently hangs the UI.
+        if (event.type !== "error" && event.type !== "complete") return prev;
+        const notice: SandboxEvent = {
+          seq: prev.length,
+          t: event.t,
+          type: "error",
+          text: `Trace truncated at ${MAX_EVENTS} instrumented events.`,
+        };
+        const truncated = prev.some((e) => e.type === "error" && e.text?.startsWith("Trace truncated"));
+        return truncated ? [...prev, event] : [...prev, notice, event];
+      });
       if (event.type === "complete") {
         if (timerRef.current) clearTimeout(timerRef.current);
         setStatus("done");
