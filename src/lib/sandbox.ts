@@ -222,8 +222,10 @@ const RUNTIME = `
     function finish(reject, value, verb) {
       if (settled) return;
       settled = true;
-      emit('microtask-enqueue', { id: id, label: 'Promise.' + name + ' ' + verb + ' (' + items.length + ')' });
-      emit('microtask-run', { id: id });
+      var label = 'Promise.' + name + ' ' + verb + ' (' + items.length + ')';
+      emit('microtask-enqueue', { id: id, label: label });
+      emit('microtask-run', { id: id, label: label });
+
       if (reject) rejectOuter(value); else resolveOuter(value);
       emit('microtask-end', { id: id });
       pending--;
