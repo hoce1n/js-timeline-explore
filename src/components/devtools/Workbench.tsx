@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Play, SkipBack, SkipForward, RotateCcw, Square, Zap, Terminal, Trash2, Link2, Check } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, RotateCcw, Square, Zap, Terminal, Trash2, Link2, Check } from "lucide-react";
 import CodeEditor from "./CodeEditor";
 import { useSandbox } from "@/hooks/use-sandbox";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -17,6 +17,8 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
   const { hostRef, status, trace, run, reset } = useSandbox();
   const [mode, setMode] = useState<"run" | "step">("run");
   const [cursor, setCursor] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState(1);
   const [consoleClearSeq, setConsoleClearSeq] = useState(0);
   const [copiedLink, setCopiedLink] = useState(false);
   const logRef = useRef<HTMLDivElement | null>(null);
@@ -30,6 +32,26 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
   useEffect(() => {
     if (trace.length === 0) setConsoleClearSeq(0);
   }, [trace.length]);
+
+  // Autoplay: advance the cursor through the recorded trace.
+  useEffect(() => {
+    if (!playing) return;
+    const intervalMs = Math.max(40, 150 / speed);
+    const id = setInterval(() => {
+      setCursor((c) => Math.min(trace.length, c + 1));
+    }, intervalMs);
+    return () => clearInterval(id);
+  }, [playing, speed, trace.length]);
+
+  // Stop the replay once it reaches the end of the trace.
+  useEffect(() => {
+    if (playing && cursor >= trace.length) setPlaying(false);
+  }, [playing, cursor, trace.length]);
+
+  // Leaving step mode or starting a new run stops any replay.
+  useEffect(() => {
+    if (mode !== "step" || status === "running") setPlaying(false);
+  }, [mode, status]);
 
   useEffect(
     () => () => {
@@ -55,6 +77,7 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
 
   const handleRun = () => {
     setCursor(0);
+    setPlaying(false);
     run(code);
   };
 
@@ -177,6 +200,34 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
 
         {canStep && (
           <div className="flex items-center gap-2 border-t border-border bg-panel px-3 py-2">
+            <button
+              onClick={() => {
+                if (cursor >= trace.length) setCursor(0);
+                setPlaying((p) => !p);
+              }}
+              aria-label={playing ? "Pause replay" : "Play replay"}
+              title={playing ? "Pause replay" : "Replay the trace (autoplay)"}
+              className={`inline-flex items-center gap-1 rounded-sm border px-2 py-1 text-xs transition-colors ${
+                playing
+                  ? "border-warning/60 text-warning"
+                  : "border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {playing ? <Pause className="size-3.5" /> : <Play className="size-3.5" />}
+              {playing ? "pause" : "play"}
+            </button>
+            <select
+              aria-label="Replay speed"
+              title="Replay speed"
+              value={speed}
+              onChange={(e) => setSpeed(Number(e.target.value))}
+              className="rounded-sm border border-border bg-card px-1.5 py-1 text-[11px] text-muted-foreground outline-none focus:border-secondary"
+            >
+              <option value={0.5}>0.5×</option>
+              <option value={1}>1×</option>
+              <option value={2}>2×</option>
+              <option value={4}>4×</option>
+            </select>
             <button
               onClick={() => setCursor((c) => Math.max(0, c - 1))}
               className="rounded-sm border border-border p-1 text-muted-foreground hover:text-foreground"
