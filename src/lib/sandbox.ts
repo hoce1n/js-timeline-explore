@@ -8,6 +8,9 @@ export type SandboxEvent = {
     | "microtask-enqueue"
     | "microtask-run"
     | "microtask-end"
+    | "macrotask-scheduled"
+    | "macrotask-ready"
+    | "macrotask-cancel"
     | "macrotask-enqueue"
     | "macrotask-run"
     | "macrotask-end"
@@ -36,6 +39,8 @@ const RUNTIME = `
   var rawST = window.setTimeout.bind(window);
   var rawCT = window.clearTimeout.bind(window);
   var rawSI = window.setInterval.bind(window);
+  var rawCI = window.clearInterval.bind(window);
+  var timeoutHandles = {};
   var rawConsole = { log: console.log.bind(console) };
 
   function emit(type, data) {
@@ -100,8 +105,10 @@ const RUNTIME = `
   function scheduleMacrotask(fn, delay, label, frameName, extra) {
     var id = ++taskId;
     pending++;
-    emit('macrotask-enqueue', { id: id, label: label });
-    return rawST(function () {
+    emit('macrotask-scheduled', { id: id, label: label });
+    var handle = rawST(function () {
+      delete timeoutHandles[handle];
+      emit('macrotask-ready', { id: id });
       emit('macrotask-run', { id: id });
       stack.push(frameName);
       emit('stack-push', { name: frameName });
@@ -117,6 +124,8 @@ const RUNTIME = `
         maybeComplete();
       }
     }, delay);
+    timeoutHandles[handle] = id;
+    return handle;
   }
 
   window.setTimeout = function (fn, ms) {
@@ -126,16 +135,28 @@ const RUNTIME = `
     return scheduleMacrotask(run, delay, 'setTimeout ' + delay + 'ms', 'setTimeout callback', extra);
   };
 
-  window.clearTimeout = rawCT;
+  window.clearTimeout = function (handle) {
+    if (timeoutHandles[handle] !== undefined) {
+      emit('macrotask-cancel', { id: timeoutHandles[handle] });
+      delete timeoutHandles[handle];
+      pending--;
+      maybeComplete();
+    }
+    return rawCT(handle);
+  };
 
 
   var intervalTicks = 0;
+  var intervalHandles = {};
   window.setInterval = function (fn, ms) {
     var delay = ms || 0;
+    var regId = ++taskId;
+    pending++;
+    emit('macrotask-scheduled', { id: regId, label: 'setInterval ' + delay + 'ms' });
     var handle = rawSI(function () {
       var id = ++taskId;
       intervalTicks++;
-      emit('macrotask-enqueue', { id: id, label: 'setInterval ' + delay + 'ms' });
+      emit('macrotask-ready', { id: id, label: 'setInterval ' + delay + 'ms tick' });
       emit('macrotask-run', { id: id });
       stack.push('setInterval callback');
       emit('stack-push', { name: 'setInterval callback' });
@@ -148,7 +169,18 @@ const RUNTIME = `
       }
       if (intervalTicks > 200) clearInterval(handle);
     }, delay);
+    intervalHandles[handle] = regId;
     return handle;
+  };
+
+  window.clearInterval = function (handle) {
+    if (intervalHandles[handle] !== undefined) {
+      emit('macrotask-cancel', { id: intervalHandles[handle] });
+      delete intervalHandles[handle];
+      pending--;
+      maybeComplete();
+    }
+    return rawCI(handle);
   };
 
   window.queueMicrotask = function (fn) {

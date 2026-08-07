@@ -392,7 +392,7 @@ function LoopPanel({
   traceLength: number;
 }) {
   return (
-    <div className="grid min-h-0 flex-1 grid-rows-[1fr_1fr_1fr_auto] divide-y divide-border">
+    <div className="grid min-h-0 flex-1 grid-rows-[1fr_1fr_1fr_1fr_auto] divide-y divide-border">
       <Lane
         title="Call Stack"
         hint="LIFO — top frame is executing"
@@ -403,6 +403,14 @@ function LoopPanel({
           label: f.name + (f.line ? `  · line ${f.line}` : ""),
         }))}
         empty={traceLength === 0 ? "idle" : "empty — run to completion"}
+      />
+      <Lane
+        title="Web APIs"
+        hint="in-flight handles — timers, fetch"
+        color="text-api"
+        border="border-l-api"
+        items={state.pending.map((p, i) => ({ key: `${p.id}-${i}`, label: p.label }))}
+        empty="no pending handles"
       />
       <Lane
         title="Microtask Queue"

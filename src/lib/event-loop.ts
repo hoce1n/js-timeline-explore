@@ -6,6 +6,7 @@ export type LogLine = { level: "log" | "info" | "warn" | "error" | "debug"; text
 
 export type LoopState = {
   stack: StackFrame[];
+  pending: QueueItem[];
   microtasks: QueueItem[];
   macrotasks: QueueItem[];
   logs: LogLine[];
@@ -18,6 +19,7 @@ export type LoopState = {
 
 export const EMPTY_STATE: LoopState = {
   stack: [],
+  pending: [],
   microtasks: [],
   macrotasks: [],
   logs: [],
@@ -27,6 +29,7 @@ export const EMPTY_STATE: LoopState = {
 /** Pure fold of the recorded event trace up to `cursor` events. */
 export function deriveState(trace: SandboxEvent[], cursor: number): LoopState {
   const stack: StackFrame[] = [];
+  const pending: QueueItem[] = [];
   const microtasks: QueueItem[] = [];
   const macrotasks: QueueItem[] = [];
   const logs: LogLine[] = [];
@@ -59,6 +62,16 @@ export function deriveState(trace: SandboxEvent[], cursor: number): LoopState {
       case "microtask-run":
         remove(microtasks, e.id);
         break;
+      case "macrotask-scheduled":
+        pending.push({ id: e.id ?? i, label: e.label ?? "task" });
+        break;
+      case "macrotask-ready":
+        remove(pending, e.id);
+        macrotasks.push({ id: e.id ?? i, label: e.label ?? "task" });
+        break;
+      case "macrotask-cancel":
+        remove(pending, e.id);
+        break;
       case "macrotask-enqueue":
         macrotasks.push({ id: e.id ?? i, label: e.label ?? "task" });
         break;
@@ -82,6 +95,7 @@ export function deriveState(trace: SandboxEvent[], cursor: number): LoopState {
 
   return {
     stack,
+    pending,
     microtasks,
     macrotasks,
     logs,
@@ -120,6 +134,12 @@ export function describeEvent(e: SandboxEvent): string {
       return "microtask finished";
     case "macrotask-enqueue":
       return `schedule task — ${e.label}`;
+    case "macrotask-scheduled":
+      return `register Web API handle — ${e.label ?? "task #" + e.id}`;
+    case "macrotask-ready":
+      return `timer fired — task #${e.id} is now in the macrotask queue`;
+    case "macrotask-cancel":
+      return `cancel task #${e.id} before it fires`;
     case "macrotask-run":
       return `event loop picks up task #${e.id}`;
     case "macrotask-end":
