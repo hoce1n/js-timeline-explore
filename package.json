@@ -1,5 +1,7 @@
 {
-  "name": "tanstack_start_ts",
+  "name": "js-timeline-explore",
+  "description": "Interactive JavaScript timeline with a sandboxed REPL and real event-loop visualizer.",
+  "license": "MIT",
   "private": true,
   "sideEffects": false,
   "type": "module",
