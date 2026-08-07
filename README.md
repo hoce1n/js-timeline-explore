@@ -8,9 +8,15 @@ Interactive JavaScript timeline with a sandboxed REPL and real event-loop visual
 
 - The sandboxed REPL lets visitors write and run JavaScript inside a secure iframe, not by using `eval` in the main page.
 - The event-loop visualizer shows real call stack, microtask, and task queue behavior produced by instrumented execution.
-- This is a working developer tool demo, not a decorative or fake “devtools” skin.
+- This is a working developer tool demo, not a decorative or fake "devtools" skin.
 
-<!-- TODO: add screenshot/gif of the event loop visualizer in step mode -->
+## Features
+
+- **Eras timeline** — an expandable walk through JavaScript's eras, from `var` hoisting to top-level await, each with a runnable snippet and a runtime comparison (V8 / Node / Deno / Bun).
+- **Sandboxed REPL** — CodeMirror editor wired to an instrumented iframe. Run with the button or `Ctrl/Cmd+Enter`. Console output streams back over `postMessage`.
+- **Event-loop visualizer** — step or scrub through a real trace: call stack, microtask queue, macrotask queue, per-step timing, and total elapsed time.
+- **Shareable links** — every snippet lives in the URL hash, so a share link reopens the editor preloaded with that code.
+- **Copy & clear** — one-click copy on every code snippet, plus a clear-console button in the REPL.
 
 ## Quick start
 
@@ -19,7 +25,7 @@ npm i
 npm run dev
 ```
 
-Then open the local URL shown by Vite.
+Then open the local URL shown by Vite. (The lockfile is generated with [Bun](https://bun.sh) — `bun install` works too.)
 
 ## How it's built
 
