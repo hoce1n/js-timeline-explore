@@ -6,6 +6,7 @@ import { REPL_EXAMPLES } from "@/lib/js-eras";
 
 const Workbench = lazy(() => import("@/components/devtools/Workbench"));
 
+const SITE_ORIGIN = "https://js-timeline-explore.lovable.app";
 const TITLE = "runtime.js — an interactive tour of JavaScript itself";
 const DESCRIPTION =
   "A DevTools-styled walk through JavaScript's eras, with a real sandboxed REPL and an event loop visualizer driven by actual instrumentation of your code.";
@@ -17,8 +18,13 @@ export const Route = createFileRoute("/")({
       { name: "description", content: DESCRIPTION },
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESCRIPTION },
+      { property: "og:image", content: `${SITE_ORIGIN}/og-image.png` },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:url", content: `${SITE_ORIGIN}/` },
       { name: "twitter:title", content: TITLE },
       { name: "twitter:description", content: DESCRIPTION },
+      { name: "twitter:image", content: `${SITE_ORIGIN}/og-image.png` },
     ],
   }),
   component: Index,
