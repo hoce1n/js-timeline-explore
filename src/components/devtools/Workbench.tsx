@@ -194,6 +194,7 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
 }
 
 function ConsolePanel({
+
   logs,
   logRef,
   status,
@@ -205,7 +206,12 @@ function ConsolePanel({
   traceLength: number;
 }) {
   return (
+    <>
+      <p className="border-b border-border/60 bg-panel/60 px-3 py-1 text-[11px] text-muted-foreground">
+        fetch is mocked in this sandbox — no network access.
+      </p>
     <div ref={logRef} className="min-h-0 flex-1 overflow-auto px-3 py-2 text-[12.5px] leading-relaxed">
+
       {logs.length === 0 && traceLength === 0 && (
         <p className="text-muted-foreground">
           <span className="text-secondary">&gt;</span> nothing logged yet — hit Run.
@@ -234,7 +240,9 @@ function ConsolePanel({
         </div>
       ))}
     </div>
+    </>
   );
+
 }
 
 function LoopPanel({
