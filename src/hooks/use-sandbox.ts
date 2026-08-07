@@ -12,6 +12,9 @@ export function useSandbox() {
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const runIdRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bufferRef = useRef<SandboxEvent[]>([]);
+  const flushHandle = useRef<number | null>(null);
+  const truncatedRef = useRef(false);
   const [status, setStatus] = useState<SandboxStatus>("booting");
   const [trace, setTrace] = useState<SandboxEvent[]>([]);
 
