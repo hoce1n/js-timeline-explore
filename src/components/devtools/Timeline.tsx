@@ -109,7 +109,7 @@ function ConceptRow({ concept, onRun }: { concept: Concept; onRun: (code: string
             <CodeBlock code={concept.code} />
             <button
               onClick={() => onRun(concept.code)}
-              className="absolute right-2 top-2 inline-flex items-center gap-1.5 rounded-sm border border-border bg-card px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+              className="absolute right-24 top-2 inline-flex items-center gap-1.5 rounded-sm border border-border bg-card px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:border-primary hover:text-primary"
             >
               <Play className="size-3" /> run in console
             </button>
