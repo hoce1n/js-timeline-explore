@@ -207,6 +207,9 @@ function ConsolePanel({
   status: string;
   traceLength: number;
 }) {
+  const MAX_RENDERED_LOGS = 1000;
+  const hidden = Math.max(0, logs.length - MAX_RENDERED_LOGS);
+  const visible = hidden > 0 ? logs.slice(logs.length - MAX_RENDERED_LOGS) : logs;
   return (
     <>
       <p className="border-b border-border/60 bg-panel/60 px-3 py-1 text-[11px] text-muted-foreground">
@@ -224,7 +227,13 @@ function ConsolePanel({
           <span className="text-secondary">&gt;</span> executed with no console output.
         </p>
       )}
-      {logs.map((log) => (
+      {hidden > 0 && (
+        <p className="mb-1 border-b border-border/40 py-1 text-[11px] text-warning">
+          output truncated — {hidden} earlier line{hidden === 1 ? "" : "s"} hidden (showing last{" "}
+          {MAX_RENDERED_LOGS})
+        </p>
+      )}
+      {visible.map((log) => (
         <div
           key={log.seq}
           className={`flex gap-2 border-b border-border/40 py-1 font-mono ${
