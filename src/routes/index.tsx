@@ -68,7 +68,7 @@ function Index() {
           </p>
         </div>
 
-        <nav className="mx-auto flex max-w-350 items-end gap-px px-4" aria-label="Panels">
+        <nav className="mx-auto flex max-w-350 items-end gap-px overflow-x-auto px-4" aria-label="Panels">
           {TABS.map((t) => {
             const active = tab === t.id;
             return (
