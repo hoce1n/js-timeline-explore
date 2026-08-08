@@ -196,3 +196,34 @@
   );
 }
 
+/* Event-loop lane token transitions (real data, animated presentation) */
+@keyframes token-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-0.4rem) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes token-leave {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(0.4rem) scale(0.98);
+  }
+}
+
+.token-entering {
+  animation: token-enter 180ms ease-out both;
+}
+
+.token-leaving {
+  animation: token-leave 200ms ease-in forwards;
+}
+
