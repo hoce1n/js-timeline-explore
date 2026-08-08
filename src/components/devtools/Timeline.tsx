@@ -34,7 +34,7 @@ export function Timeline({
     const buttons = Array.from(
       railRef.current?.querySelectorAll<HTMLButtonElement>('[data-era]') ?? [],
     );
-    const current = buttons.findIndex((b) => b.dataset.era === era.id);
+    const current = buttons.findIndex((b) => b.dataset["era"] === era.id);
     if (current === -1 || buttons.length === 0) return;
     e.preventDefault();
     let next: number;
@@ -43,7 +43,7 @@ export function Timeline({
     else if (e.key === "ArrowDown") next = (current + 1) % buttons.length;
     else next = (current - 1 + buttons.length) % buttons.length;
     const target = buttons[next];
-    const id = target?.dataset.era;
+    const id = target?.dataset["era"];
     if (!id) return;
     target.focus();
     onSelectEra(id);

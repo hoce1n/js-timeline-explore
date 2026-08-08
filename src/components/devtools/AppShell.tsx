@@ -27,7 +27,7 @@ function useTablistKeyboard(tab: Tab, onTabChange: (tab: Tab) => void) {
     const buttons = Array.from(
       navRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? [],
     );
-    const current = buttons.findIndex((b) => b.dataset.tab === tab);
+    const current = buttons.findIndex((b) => b.dataset["tab"] === tab);
     if (current === -1 || buttons.length === 0) return;
     e.preventDefault();
     let next: number;
@@ -37,7 +37,7 @@ function useTablistKeyboard(tab: Tab, onTabChange: (tab: Tab) => void) {
     else next = (current - 1 + buttons.length) % buttons.length;
     const target = buttons[next];
     target?.focus();
-    const id = target?.dataset.tab as Tab | undefined;
+    const id = target?.dataset["tab"] as Tab | undefined;
     if (id) onTabChange(id);
   };
 
