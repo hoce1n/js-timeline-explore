@@ -11,6 +11,9 @@
  * classes (e.g. --color-primary -> bg-primary, text-primary).
  *
  * The :root and .dark blocks define the actual color values using oklch.
+ * :root holds the light palette; .dark holds the dark palette (the app's
+ * default — the <html> element gets the .dark class unless the user opts
+ * into light mode via the header toggle).
  * All colors MUST use oklch format.
  *
  * To add a new semantic color:
@@ -72,9 +75,69 @@
   --font-sans: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
-
 :root {
   --radius: 0.25rem;
+  color-scheme: light;
+
+  /* Light DevTools surfaces — cool blue-gray neutrals */
+  --background: oklch(0.955 0.006 260);
+  --foreground: oklch(0.27 0.014 260);
+  --card: oklch(0.985 0.004 260);
+  --card-foreground: oklch(0.27 0.014 260);
+  --popover: oklch(0.985 0.004 260);
+  --popover-foreground: oklch(0.27 0.014 260);
+
+  /* JavaScript gold #F7DF1E — darkened to a goldenrod that holds WCAG AA on
+     light surfaces (the pure yellow only passes on dark) */
+  --primary: oklch(0.6 0.16 85);
+  --primary-foreground: oklch(0.97 0.005 90);
+
+  /* TypeScript blue #3178C6 */
+  --secondary: oklch(0.55 0.15 255);
+  --secondary-foreground: oklch(0.97 0.005 255);
+
+  --muted: oklch(0.93 0.008 260);
+  --muted-foreground: oklch(0.48 0.02 258);
+  --accent: oklch(0.91 0.012 260);
+  --accent-foreground: oklch(0.3 0.016 260);
+
+  --destructive: oklch(0.55 0.22 27);
+  --destructive-foreground: oklch(0.97 0.005 20);
+
+  --border: oklch(0.74 0.012 260);
+  --input: oklch(0.74 0.012 260);
+  --ring: oklch(0.55 0.15 255);
+
+  /* Event-loop lane colors + syntax accents — all ≥4.5:1 on the light
+     surfaces (3:1 for the border-like UI tokens) */
+  --stack: oklch(0.6 0.16 85);
+  --microtask: oklch(0.5 0.14 155);
+  --macrotask: oklch(0.55 0.15 255);
+  --api: oklch(0.52 0.16 320);
+  --warning: oklch(0.55 0.15 70);
+  --success: oklch(0.5 0.14 155);
+  --panel: oklch(0.92 0.008 260);
+  --panel-foreground: oklch(0.3 0.016 260);
+  --grid-line: oklch(0.74 0.012 260);
+
+  --chart-1: oklch(0.6 0.16 85);
+  --chart-2: oklch(0.55 0.15 255);
+  --chart-3: oklch(0.5 0.14 155);
+  --chart-4: oklch(0.55 0.22 27);
+  --chart-5: oklch(0.52 0.16 320);
+
+  --sidebar: oklch(0.97 0.004 260);
+  --sidebar-foreground: oklch(0.27 0.014 260);
+  --sidebar-primary: oklch(0.6 0.16 85);
+  --sidebar-primary-foreground: oklch(0.97 0.005 90);
+  --sidebar-accent: oklch(0.92 0.012 260);
+  --sidebar-accent-foreground: oklch(0.3 0.016 260);
+  --sidebar-border: oklch(0.74 0.012 260);
+  --sidebar-ring: oklch(0.55 0.15 255);
+}
+
+.dark {
+  color-scheme: dark;
 
   /* VS Code Dark Modern / One Dark Pro inspired surfaces */
   --background: oklch(0.2 0.004 260);
@@ -132,10 +195,6 @@
   --sidebar-ring: oklch(0.8 0.12 255.6);
 }
 
-.dark {
-  color-scheme: dark;
-}
-
 
 @layer base {
   * {
@@ -143,7 +202,6 @@
   }
 
   html {
-    color-scheme: dark;
     background-color: var(--color-background);
   }
 
