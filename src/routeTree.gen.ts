@@ -10,33 +10,60 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as EraEraRouteImport } from './routes/era.$era'
+import { Route as EraEraIndexRouteImport } from './routes/era.$era.index'
+import { Route as EraEraConceptRouteImport } from './routes/era.$era.$concept'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EraEraRoute = EraEraRouteImport.update({
+  id: '/era/$era',
+  path: '/era/$era',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EraEraIndexRoute = EraEraIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => EraEraRoute,
+} as any)
+const EraEraConceptRoute = EraEraConceptRouteImport.update({
+  id: '/$concept',
+  path: '/$concept',
+  getParentRoute: () => EraEraRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/era/$era': typeof EraEraRouteWithChildren
+  '/era/$era/$concept': typeof EraEraConceptRoute
+  '/era/$era/': typeof EraEraIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/era/$era/$concept': typeof EraEraConceptRoute
+  '/era/$era': typeof EraEraIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/era/$era': typeof EraEraRouteWithChildren
+  '/era/$era/$concept': typeof EraEraConceptRoute
+  '/era/$era/': typeof EraEraIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/era/$era' | '/era/$era/$concept' | '/era/$era/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/era/$era/$concept' | '/era/$era'
+  id: '__root__' | '/' | '/era/$era' | '/era/$era/$concept' | '/era/$era/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  EraEraRoute: typeof EraEraRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +75,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/era/$era': {
+      id: '/era/$era'
+      path: '/era/$era'
+      fullPath: '/era/$era'
+      preLoaderRoute: typeof EraEraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/era/$era/': {
+      id: '/era/$era/'
+      path: '/'
+      fullPath: '/era/$era/'
+      preLoaderRoute: typeof EraEraIndexRouteImport
+      parentRoute: typeof EraEraRoute
+    }
+    '/era/$era/$concept': {
+      id: '/era/$era/$concept'
+      path: '/$concept'
+      fullPath: '/era/$era/$concept'
+      preLoaderRoute: typeof EraEraConceptRouteImport
+      parentRoute: typeof EraEraRoute
+    }
   }
 }
 
+interface EraEraRouteChildren {
+  EraEraConceptRoute: typeof EraEraConceptRoute
+  EraEraIndexRoute: typeof EraEraIndexRoute
+}
+
+const EraEraRouteChildren: EraEraRouteChildren = {
+  EraEraConceptRoute: EraEraConceptRoute,
+  EraEraIndexRoute: EraEraIndexRoute,
+}
+
+const EraEraRouteWithChildren =
+  EraEraRoute._addFileChildren(EraEraRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  EraEraRoute: EraEraRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

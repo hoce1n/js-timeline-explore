@@ -1,47 +1,41 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ClientOnly } from "@tanstack/react-router";
-import { Timeline } from "@/components/devtools/Timeline";
-import { PatternLibrary } from "@/components/devtools/PatternLibrary";
-import { REPL_EXAMPLES } from "@/lib/js-eras";
+import { AppShell, type Tab } from "@/components/devtools/AppShell";
+import { SourcesView } from "@/components/devtools/SourcesView";
+import { ERAS, REPL_EXAMPLES } from "@/lib/js-eras";
 import { encodeCode, readCodeFromHash } from "@/lib/share";
+import { SITE_ORIGIN, SITE_TITLE, SITE_DESCRIPTION } from "@/lib/seo";
 
 const Workbench = lazy(() => import("@/components/devtools/Workbench"));
 
-const SITE_ORIGIN = "https://js-timeline-explore.lovable.app";
-const TITLE = "runtime.js — an interactive tour of JavaScript itself";
-const DESCRIPTION =
-  "A DevTools-styled walk through JavaScript's eras, with a real sandboxed REPL and an event loop visualizer driven by actual instrumentation of your code.";
-
 export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>): { tab: Tab } => ({
+    tab: search.tab === "loop" || search.tab === "console" ? search.tab : "timeline",
+  }),
   head: () => ({
     meta: [
-      { title: TITLE },
-      { name: "description", content: DESCRIPTION },
-      { property: "og:title", content: TITLE },
-      { property: "og:description", content: DESCRIPTION },
+      { title: SITE_TITLE },
+      { name: "description", content: SITE_DESCRIPTION },
+      { property: "og:title", content: SITE_TITLE },
+      { property: "og:description", content: SITE_DESCRIPTION },
       { property: "og:image", content: `${SITE_ORIGIN}/og-image.png` },
       { property: "og:image:width", content: "1200" },
       { property: "og:image:height", content: "630" },
       { property: "og:url", content: `${SITE_ORIGIN}/` },
-      { name: "twitter:title", content: TITLE },
-      { name: "twitter:description", content: DESCRIPTION },
+      { name: "twitter:title", content: SITE_TITLE },
+      { name: "twitter:description", content: SITE_DESCRIPTION },
       { name: "twitter:image", content: `${SITE_ORIGIN}/og-image.png` },
     ],
   }),
   component: Index,
 });
 
-type Tab = "timeline" | "loop" | "console";
-
-const TABS: { id: Tab; label: string; hint: string }[] = [
-  { id: "timeline", label: "Sources", hint: "eras & concepts" },
-  { id: "loop", label: "Performance", hint: "event loop" },
-  { id: "console", label: "Console", hint: "live REPL" },
-];
-
 function Index() {
-  const [tab, setTab] = useState<Tab>("timeline");
+  const { tab } = Route.useSearch();
+  const navigate = useNavigate();
+  const [activeEra, setActiveEra] = useState(() => ERAS[0]!.id);
+  const [expandedConcept, setExpandedConcept] = useState<string | null>(null);
   const [code, setCode] = useState(() =>
     typeof window === "undefined"
       ? REPL_EXAMPLES[0]!.code
@@ -70,78 +64,23 @@ function Index() {
 
   const runInConsole = (snippet: string) => {
     setCode(snippet);
-    setTab("console");
+    navigate({ to: "/", search: { tab: "console" } });
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-panel">
-        <div className="mx-auto flex max-w-350 flex-wrap items-center gap-4 px-4 py-3">
-          <div className="flex items-center gap-2.5">
-            <span className="grid size-6 place-items-center rounded-[3px] bg-primary text-[11px] font-bold text-primary-foreground">
-              JS
-            </span>
-            <h1 className="text-sm font-bold tracking-tight">
-              runtime<span className="text-muted-foreground">.js</span>
-            </h1>
-          </div>
-          <p className="hidden text-[11.5px] text-muted-foreground sm:block">
-            the language, its eras, and the loop that runs it
-          </p>
-          <p className="ml-auto text-[11px] text-muted-foreground">
-            executes in a sandboxed iframe · never <code className="text-destructive">eval</code> on
-            this page
-          </p>
-        </div>
+    <AppShell tab={tab} onTabChange={(next) => navigate({ to: "/", search: { tab: next } })}>
+      {tab === "timeline" && (
+        <SourcesView
+          activeEra={activeEra}
+          expandedConcept={expandedConcept}
+          onSelectEra={setActiveEra}
+          onToggleConcept={setExpandedConcept}
+          onRun={runInConsole}
+        />
+      )}
 
-        <nav className="mx-auto flex max-w-350 items-end gap-px overflow-x-auto px-4" aria-label="Panels">
-          {TABS.map((t) => {
-            const active = tab === t.id;
-            return (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                aria-current={active ? "page" : undefined}
-                className={`group relative -mb-px shrink-0 whitespace-nowrap border border-b-0 px-3 py-2 text-xs transition-colors sm:px-3.5 ${
-                  active
-                    ? "border-border bg-background text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <span className={active ? "text-primary" : ""}>{t.label}</span>
-                <span className="ml-2 hidden text-[10.5px] text-muted-foreground sm:inline">
-                  {t.hint}
-                </span>
-                {active && <span className="absolute inset-x-0 top-0 h-px bg-primary" />}
-              </button>
-            );
-          })}
-        </nav>
-      </header>
-
-      <main className="mx-auto max-w-350 px-4 py-6">
-        {tab === "timeline" && (
-          <>
-            <section className="mb-6 max-w-3xl">
-              <h2 className="text-lg font-bold">
-                One spine: <span className="text-primary">the evolution of JavaScript</span>
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-panel-foreground">
-                Pick an era, expand a concept, and see where it lands in today&apos;s runtimes. Every
-                snippet can be dropped straight into the sandboxed console — the event loop panel
-                then shows real, instrumented execution, not a looping animation.
-              </p>
-            </section>
-            <div className="overflow-hidden rounded-sm border border-border">
-              <Timeline onRun={runInConsole} />
-            </div>
-            <div className="mt-8">
-              <PatternLibrary onRun={runInConsole} />
-            </div>
-          </>
-        )}
-
-        <div className={tab === "timeline" ? "hidden" : "block"}>
+      {tab !== "timeline" && (
+        <div>
           <section className="mb-4 max-w-3xl">
             <h2 className="text-lg font-bold">
               {tab === "console" ? (
@@ -174,27 +113,11 @@ function Index() {
                 </div>
               }
             >
-              <Workbench
-                code={code}
-                onCodeChange={setCode}
-                view={tab === "console" ? "console" : "loop"}
-              />
+              <Workbench code={code} onCodeChange={setCode} view={tab === "console" ? "console" : "loop"} />
             </Suspense>
           </ClientOnly>
         </div>
-      </main>
-
-      <footer className="mt-8 border-t border-border bg-panel">
-        <div className="mx-auto max-w-350 px-4 py-5 text-[11.5px] leading-relaxed text-muted-foreground">
-          <p>
-            <span className="text-destructive">Uncaught TypeError:</span> Cannot read properties of
-            null (reading &apos;author&apos;)
-          </p>
-          <p className="mt-1 pl-4 text-muted-foreground/70">
-            at Footer (runtime.js:1:1) — this site is about the language, not a person.
-          </p>
-        </div>
-      </footer>
-    </div>
+      )}
+    </AppShell>
   );
 }
