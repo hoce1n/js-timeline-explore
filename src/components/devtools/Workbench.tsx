@@ -6,6 +6,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { deriveState, describeEvent } from "@/lib/event-loop";
 import { REPL_EXAMPLES } from "@/lib/js-eras";
 import { buildShareUrl, copyText } from "@/lib/share";
+import { track } from "@/lib/analytics";
 
 type Props = {
   code: string;
@@ -79,6 +80,7 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
     setCursor(0);
     setPlaying(false);
     run(code);
+    track("run", { mode });
   };
 
   const handleClearConsole = () => {
@@ -115,6 +117,7 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
   const handleShare = async () => {
     await copyText(buildShareUrl(code));
     setCopiedLink(true);
+    track("share");
     if (linkResetTimer.current) clearTimeout(linkResetTimer.current);
     linkResetTimer.current = setTimeout(() => setCopiedLink(false), 1500);
   };
@@ -165,6 +168,7 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
                 onCodeChange(found.code);
                 reset();
                 setCursor(0);
+                track("load_example", { id: found.id });
               }
             }}
           >
