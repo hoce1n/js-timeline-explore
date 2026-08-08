@@ -45,6 +45,27 @@ for (var i = 0; i < 3; i++) {
     console.log("var i =", i); // 3, 3, 3 — one shared binding
   }, 0);
 }`,
+        ecosystem: {
+          title: "Where the top-level scope lives",
+          rows: [
+            {
+              runtime: "V8",
+              note: "In a classic script, a top-level `var` becomes a property of the global object; in a module it stays module-local. `let`, `const`, and `class` never leak onto the global object.",
+            },
+            {
+              runtime: "Node.js",
+              note: "Every CommonJS file is wrapped in a function, so top-level `var` is module-local, not global. ESM files follow the spec and are strict by default.",
+            },
+            {
+              runtime: "Deno",
+              note: "All modules are ESM from day one: no CommonJS wrapper, no implicit globals — a top-level `var` is always contained.",
+            },
+            {
+              runtime: "Bun",
+              note: "Dual-mode like Node — CJS files get the wrapper, ESM files get spec scoping. Neither leaks `var` onto the global object.",
+            },
+          ],
+        },
       },
       {
         id: "callbacks",
@@ -81,6 +102,48 @@ var s = new Signal("tick");
 console.log(s.describe());
 console.log(Object.getPrototypeOf(s) === Signal.prototype);`,
       },
+      {
+        id: "strict-mode",
+        name: "Strict mode & sloppy this",
+        blurb:
+          "`'use strict'` opts out of the most surprising legacy coercions: in sloppy mode a bare `this` is coerced to the global object, in strict mode it stays `undefined`. Modules and class bodies are strict with no opt-out.",
+        code: `// new Function builds a fresh function body — the directive lands first there,
+// so sloppy and strict behavior can be compared side by side.
+const sloppy = new Function("return this;");
+const strict = new Function('"use strict"; return this;');
+
+console.log("sloppy this:", sloppy() === globalThis ? "globalThis" : typeof sloppy());
+console.log("strict this:", strict()); // stays undefined — no global coercion
+
+// Class bodies are strict regardless of the surrounding file:
+class Probe {
+  whoAmI() {
+    return this;
+  }
+}
+console.log("class method, this=undefined:", new Probe().whoAmI.call(undefined));`,
+        ecosystem: {
+          title: "Strict mode by default",
+          rows: [
+            {
+              runtime: "V8",
+              note: "Classic scripts stay sloppy unless a `\"use strict\"` directive opens the file; modules and class bodies are strict with no opt-out.",
+            },
+            {
+              runtime: "Node.js",
+              note: "CommonJS files are sloppy unless the directive is present; `.mjs` and `\"type\": \"module\"` files are always strict.",
+            },
+            {
+              runtime: "Deno",
+              note: "Strict everywhere — every file is an ESM module, so sloppy-mode coercions from old demos cannot happen at all.",
+            },
+            {
+              runtime: "Bun",
+              note: "Matches Node's split: CJS is sloppy by default, ESM is strict, and `\"use strict\"` still works as an escape hatch inside CJS.",
+            },
+          ],
+        },
+      },
     ],
   },
   {
@@ -115,20 +178,23 @@ for (let i = 0; i < 3; i++) {
         name: "Arrow functions & lexical this",
         blurb:
           "Arrows have no own `this`, `arguments`, or `prototype`. They close over the enclosing binding, which removed a whole genre of `var self = this` workarounds.",
-        code: `const counter = {
+        code: `// In sloppy mode a plain function call rebinds \`this\` to the global
+// object. The arrow closes over the enclosing \`this\` instead — the object.
+const counter = {
   count: 0,
   startLexical() {
-    [1, 2].forEach(() => { this.count++; });
+    [1, 2].forEach(() => { this.count++; }); // arrow keeps this = counter
     return this.count;
   },
   startClassic() {
-    [1, 2].forEach(function () { this?.count++; });
+    [1, 2].forEach(function () { this.count++; }); // classic loses it
     return this.count;
   },
 };
 
-console.log("arrow keeps this:", counter.startLexical());
-console.log("classic loses it:", counter.startClassic());`,
+console.log("arrow keeps this → counter.count =", counter.startLexical());
+console.log("classic loses it → counter.count still", counter.startClassic());
+console.log("classic incremented a phantom global:", globalThis.count);`,
       },
       {
         id: "promises",
@@ -161,6 +227,57 @@ console.log("2 sync");`,
             {
               runtime: "Bun",
               note: "JavaScriptCore instead of V8; microtask semantics are spec-identical, but timer resolution and task batching differ measurably.",
+            },
+          ],
+        },
+      },
+      {
+        id: "classes",
+        name: "Classes & extends",
+        blurb:
+          "Class syntax is sugar over prototypes, but with real rules: methods are non-enumerable, constructors require `new`, and class bodies are always strict. `extends` wires up `super` and `instanceof` across the whole chain.",
+        code: `class Animal {
+  constructor(name) {
+    this.name = name;
+  }
+  speak() {
+    return this.name + " makes a sound";
+  }
+}
+
+class Dog extends Animal {
+  constructor(name) {
+    super(name);
+    this.species = "dog";
+  }
+  speak() {
+    return this.name + " barks";
+  }
+}
+
+const rex = new Dog("Rex");
+console.log(rex.speak());
+console.log("instanceof Dog / Animal:", rex instanceof Dog, rex instanceof Animal);
+console.log("static chain:", Object.getPrototypeOf(Dog) === Animal);
+console.log("own enumerable keys:", Object.keys(rex)); // instance fields only`,
+        ecosystem: {
+          title: "Private fields (#) across runtimes",
+          rows: [
+            {
+              runtime: "V8",
+              note: "`#x` is enforced at parse time and invisible to `Object.keys` and `getOwnPropertyNames` — true privacy, not a naming convention. Shipped in V8 7.4 (2019).",
+            },
+            {
+              runtime: "Node.js",
+              note: "Private fields landed in Node 12 (V8 7.4); the ergonomic `#x in obj` membership check since Node 16.",
+            },
+            {
+              runtime: "Deno",
+              note: "Full `#` support, including `#x in obj`, from the very first 1.0 release — it launched after the feature was already standard.",
+            },
+            {
+              runtime: "Bun",
+              note: "JavaScriptCore implements private fields natively, with semantics that match V8 exactly.",
             },
           ],
         },
@@ -232,6 +349,45 @@ console.log("sync");`,
           ],
         },
       },
+      {
+        id: "unhandled-rejections",
+        name: "Unhandled rejections",
+        blurb:
+          "A rejected promise with no `.catch` or `await` triggers `unhandledrejection`. The timing is subtle: a handler attached in the *same task* still saves it — the report only fires after the microtask queue drains with the promise still unhandled.",
+        code: `// Rescued within the same task: no unhandledrejection fires.
+Promise.reject(new Error("rescued in same task"))
+  .catch((err) => console.log("caught:", err.message));
+
+// Handler attached in a later macrotask — too late to prevent the report.
+const late = Promise.reject(new Error("late handler"));
+setTimeout(() => late.catch(() => console.log("late rescue ran")), 0);
+
+// Never handled at all — reported as an uncaught (in promise) error.
+Promise.reject(new Error("never handled"));
+
+console.log("sync done");`,
+        ecosystem: {
+          title: "What happens when you drop a rejection",
+          rows: [
+            {
+              runtime: "V8",
+              note: "The engine only fires the host's `unhandledrejection` mechanism after the microtask queue drains — a handler attached in the same task still rescues it.",
+            },
+            {
+              runtime: "Node.js",
+              note: "Since Node 15 the default `--unhandled-rejections=throw` makes an unhandled rejection crash the process; `warn`, `strict`, and `none` are the other modes.",
+            },
+            {
+              runtime: "Deno",
+              note: "Prompts on the first unhandled rejection so you can inspect, ignore, or exit — use `--no-prompt` to fail fast in CI.",
+            },
+            {
+              runtime: "Bun",
+              note: "Prints `Uncaught (in promise) …` and exits with a non-zero status by default, like Node in strict mode.",
+            },
+          ],
+        },
+      },
     ],
   },
   {
@@ -247,14 +403,20 @@ console.log("sync");`,
         name: "ES Modules",
         blurb:
           "`import`/`export` are static: bindings are resolved before evaluation, which is what makes tree-shaking and cycle handling possible. Imports are live bindings, not copies.",
-        code: `// counter.js
+        code: `// counter.js — a module that exports a *live* binding
 export let hits = 0;
-export function hit() { hits++; }
+export function hit() {
+  hits++;
+}
 
-// main.js
-import { hits, hit } from "./counter.js";
 hit();
-console.log(hits); // 1 — a live binding, not a snapshot`,
+hit();
+console.log("hits after two hit() calls:", hits);
+
+// main.js would import the binding, not a snapshot:
+//   import { hits, hit } from "./counter.js";
+//   hit();
+//   console.log(hits); // 1 — the same binding, already updated`,
       },
       {
         id: "resolution",
@@ -283,6 +445,51 @@ import local from "./util.js";`,
             {
               runtime: "Bun",
               note: "Node-compatible resolution with extension guessing, plus native TypeScript and JSX loading with no build step.",
+            },
+          ],
+        },
+      },
+      {
+        id: "cjs-interop",
+        name: "CommonJS ↔ ESM interop",
+        blurb:
+          "Two module systems, one language. `require()` is synchronous and dynamic; `import` is static, hoisted, and delivers live bindings. When they meet, each runtime picks its own default-export story — and that is where the ecosystem's strangest edge cases live.",
+        code: `// This whole snippet runs as a module — the sandbox treats files that
+// start a line with export as ESM.
+export let count = 0; // importers see a *live* binding, not a snapshot
+export function inc() {
+  count++;
+}
+
+console.log("count", count);
+inc();
+inc();
+console.log("count after two inc()", count);
+
+// CommonJS has no live bindings: module.exports is one mutable object and
+// require() reads whatever it holds at call time.
+//
+//   // counter.cjs
+//   let count = 0;
+//   module.exports = { get count() { return count; }, inc() { count++; } };`,
+        ecosystem: {
+          title: "Requiring ESM, importing CJS",
+          rows: [
+            {
+              runtime: "V8",
+              note: "Implements `import`, `export`, and dynamic `import()` — and nothing else. `require` is embedder territory, so no interop logic lives in the engine.",
+            },
+            {
+              runtime: "Node.js",
+              note: "`import cjs from \"pkg\"` exposes `module.exports` as the default export, with named exports detected by cjs-module-lexer. `require()` of ESM is experimental in Node 22 and default-on in Node 23+.",
+            },
+            {
+              runtime: "Deno",
+              note: "No `require` in the native API — npm packages are reached via `npm:` specifiers, and the Node compatibility layer emulates CJS for `node:` built-ins.",
+            },
+            {
+              runtime: "Bun",
+              note: "Transparent two-way interop: `require()` of ESM and `import` of CJS both work, reconstructing live bindings from CJS where possible.",
             },
           ],
         },
@@ -328,6 +535,50 @@ console.log("importers of this module waited for it");`,
           ],
         },
       },
+      {
+        id: "copy-methods",
+        name: "Array copy methods & .at",
+        blurb:
+          "`toSorted`, `toReversed`, `toSpliced`, `with`, and `.at` return new arrays instead of mutating in place. Combined with negative indexing, immutable updates become readable and free of the classic copy-then-mutate footgun.",
+        code: `const scores = [80, 30, 55];
+
+const sorted = scores.toSorted((a, b) => a - b);
+const reversed = scores.toReversed();
+const replaced = scores.with(1, 99);
+const cut = scores.toSpliced(0, 2);
+
+console.log("original untouched:", scores);
+console.log("toSorted:", sorted);
+console.log("toReversed:", reversed);
+console.log("with(1, 99):", replaced);
+console.log("toSpliced(0, 2):", cut);
+console.log("scores.at(-1):", scores.at(-1));
+
+// The old way copied first, then mutated:
+const legacy = [...scores].sort((a, b) => a - b);
+console.log("legacy copy+sort:", legacy);`,
+        ecosystem: {
+          title: "When each runtime shipped them",
+          rows: [
+            {
+              runtime: "V8",
+              note: "`.at()` in V8 9.2 (2021); the `toSorted`/`toReversed`/`toSpliced`/`with` copy methods in V8 11.4 (2023).",
+            },
+            {
+              runtime: "Node.js",
+              note: "`.at()` since Node 16.6; the four copy methods since Node 20.",
+            },
+            {
+              runtime: "Deno",
+              note: "`.at()` in Deno 1.16; the copy methods in Deno 1.34.",
+            },
+            {
+              runtime: "Bun",
+              note: "The full set has been available since Bun 1.0 via JavaScriptCore.",
+            },
+          ],
+        },
+      },
     ],
   },
   {
@@ -361,6 +612,47 @@ console.log(typeof Promise, typeof Symbol.asyncIterator, typeof globalThis);`,
         },
       },
       {
+        id: "io-stdlib",
+        name: "I/O & the standard library",
+        blurb:
+          "The language has no file, socket, or HTTP APIs — every runtime invented its own. The same three lines of code look completely different in Node, Deno, and Bun, which is why code is rarely portable without a shim layer.",
+        code: `// Reading a file, three ways. None of these APIs exist in the ECMAScript
+// spec — fetch is the only host API shared across every runtime.
+
+const nodeJs = \`import { readFile } from "node:fs/promises";
+const text = await readFile("config.json", "utf8");\`;
+
+const deno = \`const text = await Deno.readTextFile("config.json");\`;
+
+const bun = \`const text = await Bun.file("config.json").text();\`;
+
+console.log("Node.js", nodeJs);
+console.log("Deno", deno);
+console.log("Bun", bun);
+console.log("Common everywhere: fetch");`,
+        ecosystem: {
+          title: "The standard library gap",
+          rows: [
+            {
+              runtime: "V8",
+              note: "No I/O APIs at all — `fs`, `net`, `http`, even `console` and `setTimeout` are supplied by the host. The engine cannot open a file by itself.",
+            },
+            {
+              runtime: "Node.js",
+              note: "The original server stdlib: `fs`, `http`, `net`, `crypto`, `child_process` under the `node:` namespace. Callback-first heritage, promisified in `node:fs/promises`.",
+            },
+            {
+              runtime: "Deno",
+              note: "`Deno.*` globals (`Deno.readTextFile`, `Deno.serve`, `Deno.Kv`) plus a curated standard library on deno.land/std, all behind explicit permission flags.",
+            },
+            {
+              runtime: "Bun",
+              note: "`Bun.*` globals (`Bun.file`, `Bun.serve`, `Bun.sql`) plus drop-in Node API compatibility — a faster, batteries-included replacement.",
+            },
+          ],
+        },
+      },
+      {
         id: "edge",
         name: "Edge runtimes",
         blurb:
@@ -375,6 +667,27 @@ export default {
   },
 };
 // No fs. No process. Request/Response/URL/fetch — Web APIs only.`,
+        ecosystem: {
+          title: "The four hosts vs the edge contract",
+          rows: [
+            {
+              runtime: "V8",
+              note: "The engine underneath most edge runtimes (Cloudflare Workers, Deno Deploy, Vercel Edge) — isolates, not processes.",
+            },
+            {
+              runtime: "Node.js",
+              note: "The opposite end: full filesystem, sockets, and child processes. The edge contract deliberately strips all of that away.",
+            },
+            {
+              runtime: "Deno",
+              note: "Deno Deploy runs Workers-style isolates; `Deno.serve((req) => new Response(...))` is the same fetch-handler model.",
+            },
+            {
+              runtime: "Bun",
+              note: "`Bun.serve` also accepts a `fetch` handler, but it runs the full Node API too — a superset of the edge surface.",
+            },
+          ],
+        },
       },
     ],
   },
