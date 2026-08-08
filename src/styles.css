@@ -196,3 +196,13 @@
   );
 }
 
+/* Code editor executing-line highlight eases in instead of snapping */
+@keyframes exec-line-in {
+  from {
+    background-color: color-mix(in oklab, var(--color-primary) 0%, transparent);
+  }
+  to {
+    background-color: color-mix(in oklab, var(--color-primary) 16%, transparent);
+  }
+}
+

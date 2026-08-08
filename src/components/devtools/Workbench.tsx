@@ -233,7 +233,7 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
               value={code}
               onChange={onCodeChange}
               onRun={handleRun}
-              activeLine={mode === "step" ? (state.currentLine ?? null) : null}
+              activeLine={state.currentLine ?? null}
               minHeight={isMobile ? "220px" : "440px"}
             />
           </Suspense>

@@ -62,14 +62,14 @@ function PatternRow({
   const [open, setOpen] = useState(false);
 
   return (
-    <section className="px-3 py-3">
+    <section className="px-3 py-3 transition-colors hover:bg-accent/30">
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex w-full items-center gap-2 text-left"
+        className="group flex w-full items-center gap-2 rounded-sm px-1 py-1 text-left transition-colors hover:bg-accent/40 active:bg-accent/60"
       >
         <ChevronRight
-          className={`size-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`}
+          className={`size-4 shrink-0 text-muted-foreground transition-all group-hover:text-foreground ${open ? "rotate-90 text-foreground" : ""}`}
         />
         <h3 className="text-sm font-medium text-foreground">{pattern.title}</h3>
         <span
