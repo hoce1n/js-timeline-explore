@@ -88,12 +88,13 @@
   --primary: oklch(0.892 0.181 102.4);
   --primary-foreground: oklch(0.18 0.004 260);
 
-  /* TypeScript blue #3178C6 */
-  --secondary: oklch(0.552 0.135 255.6);
-  --secondary-foreground: oklch(0.97 0.005 260);
+  /* TypeScript blue #3178C6 — lightened to meet WCAG AA on the dark
+     surfaces (small-text 4.5:1 on background and card) */
+  --secondary: oklch(0.8 0.12 255.6);
+  --secondary-foreground: oklch(0.18 0.004 260);
 
   --muted: oklch(0.27 0.006 260);
-  --muted-foreground: oklch(0.66 0.014 258);
+  --muted-foreground: oklch(0.79 0.014 258);
   --accent: oklch(0.31 0.008 260);
   --accent-foreground: oklch(0.92 0.006 260);
 
@@ -102,24 +103,24 @@
 
   --border: oklch(0.31 0.007 260);
   --input: oklch(0.31 0.007 260);
-  --ring: oklch(0.552 0.135 255.6);
+  --ring: oklch(0.8 0.12 255.6);
 
-  /* Event-loop lane colors + syntax accents */
+  /* Event-loop lane colors + syntax accents — all ≥4.5:1 on the dark surfaces */
   --stack: oklch(0.892 0.181 102.4);
-  --microtask: oklch(0.72 0.16 155);
-  --macrotask: oklch(0.552 0.135 255.6);
-  --api: oklch(0.72 0.17 320);
+  --microtask: oklch(0.8 0.14 155);
+  --macrotask: oklch(0.8 0.12 255.6);
+  --api: oklch(0.82 0.13 320);
   --warning: oklch(0.82 0.15 82);
-  --success: oklch(0.72 0.16 155);
+  --success: oklch(0.8 0.14 155);
   --panel: oklch(0.17 0.004 260);
-  --panel-foreground: oklch(0.72 0.01 260);
+  --panel-foreground: oklch(0.79 0.01 260);
   --grid-line: oklch(0.28 0.006 260);
 
   --chart-1: oklch(0.892 0.181 102.4);
-  --chart-2: oklch(0.552 0.135 255.6);
-  --chart-3: oklch(0.72 0.16 155);
+  --chart-2: oklch(0.8 0.12 255.6);
+  --chart-3: oklch(0.8 0.14 155);
   --chart-4: oklch(0.638 0.203 26.3);
-  --chart-5: oklch(0.7 0.15 320);
+  --chart-5: oklch(0.82 0.13 320);
 
   --sidebar: oklch(0.17 0.004 260);
   --sidebar-foreground: oklch(0.78 0.01 260);
@@ -128,7 +129,7 @@
   --sidebar-accent: oklch(0.27 0.006 260);
   --sidebar-accent-foreground: oklch(0.92 0.006 260);
   --sidebar-border: oklch(0.31 0.007 260);
-  --sidebar-ring: oklch(0.552 0.135 255.6);
+  --sidebar-ring: oklch(0.8 0.12 255.6);
 }
 
 .dark {
@@ -156,6 +157,11 @@
 
   ::selection {
     background-color: color-mix(in oklab, var(--color-secondary) 45%, transparent);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
   }
 
   ::-webkit-scrollbar {

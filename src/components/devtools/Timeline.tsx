@@ -1,3 +1,4 @@
+import { useRef, type KeyboardEvent } from "react";
 import { ChevronRight, Play } from "lucide-react";
 import { ERAS, type Concept } from "@/lib/js-eras";
 import { CodeBlock } from "./CodeBlock";
@@ -24,11 +25,39 @@ export function Timeline({
   onRun: (code: string) => void;
 }) {
   const era = ERAS.find((e) => e.id === activeEra) ?? ERAS[0]!;
+  const railRef = useRef<HTMLElement | null>(null);
+
+  const onRailKeyDown = (e: KeyboardEvent<HTMLElement>) => {
+    if (e.key !== "ArrowUp" && e.key !== "ArrowDown" && e.key !== "Home" && e.key !== "End") {
+      return;
+    }
+    const buttons = Array.from(
+      railRef.current?.querySelectorAll<HTMLButtonElement>('[data-era]') ?? [],
+    );
+    const current = buttons.findIndex((b) => b.dataset.era === era.id);
+    if (current === -1 || buttons.length === 0) return;
+    e.preventDefault();
+    let next: number;
+    if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = buttons.length - 1;
+    else if (e.key === "ArrowDown") next = (current + 1) % buttons.length;
+    else next = (current - 1 + buttons.length) % buttons.length;
+    const target = buttons[next];
+    const id = target?.dataset.era;
+    if (!id) return;
+    target.focus();
+    onSelectEra(id);
+  };
 
   return (
     <div className="grid gap-px bg-border md:grid-cols-[220px_1fr]">
       {/* era rail */}
-      <nav className="bg-panel p-2" aria-label="JavaScript eras">
+      <nav
+        ref={railRef}
+        onKeyDown={onRailKeyDown}
+        className="bg-panel p-2"
+        aria-label="JavaScript eras"
+      >
         <p className="px-2 pb-2 pt-1 text-[10.5px] uppercase tracking-widest text-muted-foreground">
           Timeline
         </p>
@@ -39,6 +68,7 @@ export function Timeline({
               <li key={e.id}>
                 <button
                   onClick={() => onSelectEra(e.id)}
+                  data-era={e.id}
                   aria-current={active ? "true" : undefined}
                   className={`flex w-full items-center gap-2 border-l-2 px-2.5 py-2 text-left text-xs transition-colors ${
                     active

@@ -485,7 +485,7 @@ function Lane({
   empty: string;
 }) {
   return (
-    <div className="min-h-0 overflow-auto p-3">
+    <section aria-label={title} className="min-h-0 overflow-auto p-3">
       <div className="mb-2 flex items-baseline gap-2">
         <h3 className={`text-[11px] font-bold uppercase tracking-widest ${color}`}>{title}</h3>
         <span className="text-[10.5px] text-muted-foreground">{hint}</span>
@@ -504,6 +504,6 @@ function Lane({
           ))}
         </ul>
       )}
-    </div>
+    </section>
   );
 }

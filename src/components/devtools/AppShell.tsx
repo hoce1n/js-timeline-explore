@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, type KeyboardEvent, type ReactNode } from "react";
 
 export type Tab = "timeline" | "loop" | "console";
 
@@ -7,6 +7,33 @@ export const TABS: { id: Tab; label: string; hint: string }[] = [
   { id: "loop", label: "Performance", hint: "event loop" },
   { id: "console", label: "Console", hint: "live REPL" },
 ];
+
+function useTablistKeyboard(tab: Tab, onTabChange: (tab: Tab) => void) {
+  const navRef = useRef<HTMLElement | null>(null);
+
+  const onKeyDown = (e: KeyboardEvent<HTMLElement>) => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight" && e.key !== "Home" && e.key !== "End") {
+      return;
+    }
+    const buttons = Array.from(
+      navRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? [],
+    );
+    const current = buttons.findIndex((b) => b.dataset.tab === tab);
+    if (current === -1 || buttons.length === 0) return;
+    e.preventDefault();
+    let next: number;
+    if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = buttons.length - 1;
+    else if (e.key === "ArrowRight") next = (current + 1) % buttons.length;
+    else next = (current - 1 + buttons.length) % buttons.length;
+    const target = buttons[next];
+    target?.focus();
+    const id = target?.dataset.tab as Tab | undefined;
+    if (id) onTabChange(id);
+  };
+
+  return { navRef, onKeyDown };
+}
 
 export function AppShell({
   tab,
@@ -17,6 +44,10 @@ export function AppShell({
   onTabChange: (tab: Tab) => void;
   children: ReactNode;
 }) {
+  const { navRef, onKeyDown } = useTablistKeyboard(tab, onTabChange);
+  const activeId = `tab-${tab}`;
+  const panelId = "panel-main";
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-panel">
@@ -39,7 +70,10 @@ export function AppShell({
         </div>
 
         <nav
+          ref={navRef}
+          onKeyDown={onKeyDown}
           className="mx-auto flex max-w-350 items-end gap-px overflow-x-auto px-4"
+          role="tablist"
           aria-label="Panels"
         >
           {TABS.map((t) => {
@@ -47,8 +81,13 @@ export function AppShell({
             return (
               <button
                 key={t.id}
+                id={`tab-${t.id}`}
+                data-tab={t.id}
                 onClick={() => onTabChange(t.id)}
-                aria-current={active ? "page" : undefined}
+                role="tab"
+                aria-selected={active}
+                aria-controls={panelId}
+                tabIndex={active ? 0 : -1}
                 className={`group relative -mb-px shrink-0 whitespace-nowrap border border-b-0 px-3 py-2 text-xs transition-colors sm:px-3.5 ${
                   active
                     ? "border-border bg-background text-foreground"
@@ -66,7 +105,15 @@ export function AppShell({
         </nav>
       </header>
 
-      <main className="mx-auto max-w-350 px-4 py-6">{children}</main>
+      <main
+        id={panelId}
+        role="tabpanel"
+        aria-labelledby={activeId}
+        tabIndex={0}
+        className="mx-auto max-w-350 px-4 py-6"
+      >
+        {children}
+      </main>
 
       <footer className="mt-8 border-t border-border bg-panel">
         <div className="mx-auto max-w-350 px-4 py-5 text-[11.5px] leading-relaxed text-muted-foreground">
