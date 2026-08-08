@@ -86,6 +86,32 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
     setConsoleClearSeq(lastSeq);
   };
 
+  const handleRunRef = useRef(handleRun);
+  handleRunRef.current = handleRun;
+  const handleClearRef = useRef(handleClearConsole);
+  handleClearRef.current = handleClearConsole;
+
+  // Global shortcuts: ⌘/Ctrl+Enter to run, ⌘/Ctrl+K to clear the console.
+  // Mod+Enter inside the editor is handled by CodeMirror, so skip it here to
+  // avoid double-running; the window handler covers every other focus point.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const key = e.key.toLowerCase();
+      if (key === "k") {
+        e.preventDefault();
+        handleClearRef.current();
+      } else if (key === "enter") {
+        const target = e.target as HTMLElement | null;
+        if (target && target.closest(".cm-editor")) return;
+        e.preventDefault();
+        handleRunRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   const handleShare = async () => {
     await copyText(buildShareUrl(code));
     setCopiedLink(true);
@@ -183,7 +209,7 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
             />
             sandbox: {status}
             <span className="ml-1 hidden rounded-sm border border-border px-1 py-px text-[10px] sm:inline">
-              ⌘/Ctrl⏎ run
+              ⌘/Ctrl⏎ run · ⌘/CtrlK clear
             </span>
           </span>
         </div>
@@ -283,7 +309,7 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
             <button
               onClick={handleClearConsole}
               disabled={!hasVisibleLogs}
-              title="Clear console output"
+              title="Clear console output (⌘/Ctrl+K)"
               className={`inline-flex items-center gap-1 rounded-sm border border-border px-1.5 py-0.5 text-[11px] transition-colors hover:text-foreground disabled:opacity-40 ${
                 recording ? "" : "ml-auto"
               }`}
