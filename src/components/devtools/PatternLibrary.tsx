@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronRight, Play } from "lucide-react";
 import {
   CATEGORY_LABEL,
@@ -14,7 +14,15 @@ const DIFFICULTY_COLOR: Record<InterviewPattern["difficulty"], string> = {
   hard: "text-destructive",
 };
 
-export function PatternLibrary({ onRun }: { onRun: (code: string) => void }) {
+export function PatternLibrary({
+  onRun,
+  focusedPattern,
+  onConsumeFocusedPattern,
+}: {
+  onRun: (code: string) => void;
+  focusedPattern?: string;
+  onConsumeFocusedPattern?: () => void;
+}) {
   const total = INTERVIEW_PATTERNS.length;
 
   return (
@@ -41,7 +49,13 @@ export function PatternLibrary({ onRun }: { onRun: (code: string) => void }) {
               </div>
               <div className="divide-y divide-border">
                 {patterns.map((pattern) => (
-                  <PatternRow key={pattern.id} pattern={pattern} onRun={onRun} />
+                  <PatternRow
+                    key={pattern.id}
+                    pattern={pattern}
+                    onRun={onRun}
+                    focused={focusedPattern === pattern.id}
+                    onConsumeFocus={onConsumeFocusedPattern}
+                  />
                 ))}
               </div>
             </div>
@@ -55,14 +69,27 @@ export function PatternLibrary({ onRun }: { onRun: (code: string) => void }) {
 function PatternRow({
   pattern,
   onRun,
+  focused,
+  onConsumeFocus,
 }: {
   pattern: InterviewPattern;
   onRun: (code: string) => void;
+  focused: boolean;
+  onConsumeFocus?: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
+  useEffect(() => {
+    if (!focused) return;
+    setOpen(true);
+    document
+      .getElementById(`pattern-row-${pattern.id}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    onConsumeFocus?.();
+  }, [focused, pattern.id, onConsumeFocus]);
+
   return (
-    <section className="px-3 py-3">
+    <section id={`pattern-row-${pattern.id}`} className="px-3 py-3 transition-colors hover:bg-accent/30">
       <button
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
