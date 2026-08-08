@@ -31,6 +31,15 @@ Then open the local URL shown by Vite. (The lockfile is generated with [Bun](htt
 
 The app is built with TanStack Start and Vite. User code runs in a sandboxed iframe, and the event-loop trace is generated from Acorn-based AST instrumentation plus controlled queue tracking.
 
+## Analytics
+
+Cookie-less, privacy-friendly analytics are built in but **disabled by default** — no script is loaded until you configure a provider:
+
+- **Plausible** (recommended): set `VITE_PLAUSIBLE_DOMAIN` to your site domain.
+- **Umami** (self-hosted alternative): set `VITE_UMAMI_HOST` and `VITE_UMAMI_WEBSITE_ID`.
+
+See `.env.example`. No visitor cookies, no accounts. Custom events (`run`, `share`, `load_example`) are forwarded automatically when a provider is enabled.
+
 ## License
 
 MIT — see LICENSE.

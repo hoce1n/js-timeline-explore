@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { initAnalytics } from "../lib/analytics";
 
 function NotFoundComponent() {
   return (
@@ -118,6 +119,11 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    // Opt-in analytics (Plausible/Umami). No-op unless a provider is configured.
+    initAnalytics();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
