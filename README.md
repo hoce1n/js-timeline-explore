@@ -47,3 +47,12 @@ MIT — see LICENSE.
 ## About
 
 A small interactive showcase of JavaScript execution and async behavior, with a low-key note that the project was developed using Lovable as the toolchain workflow.
+
+### Credits
+
+Built by [hocein](https://github.com/hoce1n):
+
+- GitHub: https://github.com/hoce1n
+- LinkedIn: https://www.linkedin.com/in/hocein/
+- Instagram: https://www.instagram.com/hoce1n/
+- Telegram: https://t.me/hoce1n

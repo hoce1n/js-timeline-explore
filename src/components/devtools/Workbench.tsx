@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Play, Pause, SkipBack, SkipForward, RotateCcw, Square, Zap, Terminal, Trash2, Link2, Check } from "lucide-react";
 import { useSandbox } from "@/hooks/use-sandbox";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { usePresence } from "@/hooks/use-presence";
 import { deriveState, describeEvent } from "@/lib/event-loop";
 import { REPL_EXAMPLES } from "@/lib/js-eras";
 import { buildShareUrl, copyText } from "@/lib/share";
@@ -450,7 +451,7 @@ function LoopPanel({
         hint="in-flight handles — timers, fetch"
         color="text-api"
         border="border-l-api"
-        items={state.pending.map((p, i) => ({ key: `${p.id}-${i}`, label: p.label }))}
+        items={state.pending.map((p) => ({ key: `p${p.id}`, label: p.label }))}
         empty="no pending handles"
       />
       <Lane
@@ -458,7 +459,7 @@ function LoopPanel({
         hint="drains fully before the next task"
         color="text-microtask"
         border="border-l-microtask"
-        items={state.microtasks.map((m, i) => ({ key: `${m.id}-${i}`, label: m.label }))}
+        items={state.microtasks.map((m) => ({ key: `m${m.id}`, label: m.label }))}
         empty="empty"
       />
       <Lane
@@ -466,7 +467,7 @@ function LoopPanel({
         hint="one task per loop turn"
         color="text-macrotask"
         border="border-l-macrotask"
-        items={state.macrotasks.map((m, i) => ({ key: `${m.id}-${i}`, label: m.label }))}
+        items={state.macrotasks.map((m) => ({ key: `M${m.id}`, label: m.label }))}
         empty="empty"
       />
       <div className="bg-panel px-3 py-2 text-[11px] text-muted-foreground">
@@ -495,20 +496,28 @@ function Lane({
   items: { key: string; label: string }[];
   empty: string;
 }) {
+  const presence = usePresence(items);
+
   return (
     <section aria-label={title} className="min-h-0 overflow-auto p-3">
       <div className="mb-2 flex items-baseline gap-2">
         <h3 className={`text-[11px] font-bold uppercase tracking-widest ${color}`}>{title}</h3>
         <span className="text-[10.5px] text-muted-foreground">{hint}</span>
       </div>
-      {items.length === 0 ? (
+      {presence.length === 0 ? (
         <p className="text-[11.5px] text-muted-foreground/70">{empty}</p>
       ) : (
         <ul className="space-y-1">
-          {items.map((item) => (
+          {presence.map((item) => (
             <li
               key={item.key}
-              className={`truncate border-l-2 bg-accent/50 px-2 py-1 text-[11.5px] ${border}`}
+              className={`truncate border-l-2 bg-accent/50 px-2 py-1 text-[11.5px] ${
+                item.phase === "leave"
+                  ? "token-leaving"
+                  : item.phase === "enter"
+                    ? "token-entering"
+                    : ""
+              } ${border}`}
             >
               {item.label}
             </li>
