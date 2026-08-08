@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Highlighter } from "shiki";
 import { CopyButton } from "./CopyButton";
+import { useTheme } from "@/components/theme-provider";
 
 let highlighterPromise: Promise<Highlighter> | null = null;
 
@@ -8,7 +9,7 @@ async function getHighlighter() {
   if (!highlighterPromise) {
     highlighterPromise = import("shiki").then((shiki) =>
       shiki.createHighlighter({
-        themes: ["one-dark-pro"],
+        themes: ["one-dark-pro", "github-light"],
         langs: ["javascript", "typescript", "json", "bash"],
       }),
     );
@@ -24,6 +25,8 @@ type Props = {
 
 /** Static snippet rendered with real Shiki tokenization (no fake colored spans). */
 export function CodeBlock({ code, lang = "javascript", className }: Props) {
+  const { theme } = useTheme();
+  const shikiTheme = theme === "dark" ? "one-dark-pro" : "github-light";
   const [html, setHtml] = useState<string | null>(null);
 
   useEffect(() => {
@@ -31,13 +34,13 @@ export function CodeBlock({ code, lang = "javascript", className }: Props) {
     getHighlighter()
       .then((hl) => {
         if (cancelled) return;
-        setHtml(hl.codeToHtml(code.trim(), { lang, theme: "one-dark-pro" }));
+        setHtml(hl.codeToHtml(code.trim(), { lang, theme: shikiTheme }));
       })
       .catch(() => setHtml(null));
     return () => {
       cancelled = true;
     };
-  }, [code, lang]);
+  }, [code, lang, shikiTheme]);
 
   const base =
     "relative overflow-x-auto rounded-sm border border-border bg-panel p-4 text-[12.5px] leading-relaxed [&_pre]:!bg-transparent [&_pre]:m-0";

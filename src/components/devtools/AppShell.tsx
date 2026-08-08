@@ -1,6 +1,7 @@
 import { useRef, type KeyboardEvent, type ReactNode } from "react";
-import { Github, Instagram, Linkedin, Send } from "lucide-react";
+import { Github, Instagram, Linkedin, Moon, Send, Sun } from "lucide-react";
 import { SiteSearch } from "./SiteSearch";
+import { useTheme } from "@/components/theme-provider";
 
 export type Tab = "timeline" | "loop" | "console";
 
@@ -54,8 +55,10 @@ export function AppShell({
   children: ReactNode;
 }) {
   const { navRef, onKeyDown } = useTablistKeyboard(tab, onTabChange);
+  const { theme, toggleTheme } = useTheme();
   const activeId = `tab-${tab}`;
   const panelId = "panel-main";
+  const nextTheme = theme === "dark" ? "light" : "dark";
 
   return (
     <div className="min-h-screen bg-background">
@@ -73,6 +76,14 @@ export function AppShell({
             the language, its eras, and the loop that runs it
           </p>
           <SiteSearch />
+          <button
+            onClick={toggleTheme}
+            aria-label={`Switch to ${nextTheme} mode`}
+            title={`Switch to ${nextTheme} mode`}
+            className="grid size-7 shrink-0 place-items-center rounded-sm border border-border text-muted-foreground transition-colors hover:border-secondary hover:text-foreground"
+          >
+            {theme === "dark" ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
+          </button>
           <p className="ml-auto hidden text-[11px] text-muted-foreground sm:block">
             executes in a sandboxed iframe · never <code className="text-destructive">eval</code>{" "}
             on this page

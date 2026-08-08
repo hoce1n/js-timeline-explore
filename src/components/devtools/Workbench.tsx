@@ -266,6 +266,7 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
               onChange={(e) => setSpeed(Number(e.target.value))}
               className="rounded-sm border border-border bg-card px-1.5 py-1 text-[11px] text-muted-foreground outline-none focus:border-secondary"
             >
+              <option value={0.25}>0.25×</option>
               <option value={0.5}>0.5×</option>
               <option value={1}>1×</option>
               <option value={2}>2×</option>

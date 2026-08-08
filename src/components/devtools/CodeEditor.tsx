@@ -1,12 +1,14 @@
 import { useEffect, useRef } from "react";
 import { EditorView, keymap, lineNumbers, highlightActiveLine } from "@codemirror/view";
-import { EditorState, StateEffect, StateField, type Extension } from "@codemirror/state";
+import { EditorState, StateEffect, StateField, Compartment, type Extension } from "@codemirror/state";
 import { Decoration, type DecorationSet } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { javascript } from "@codemirror/lang-javascript";
 import { oneDark } from "@codemirror/theme-one-dark";
-import { bracketMatching, indentOnInput, syntaxHighlighting, defaultHighlightStyle } from "@codemirror/language";
+import { bracketMatching, indentOnInput, syntaxHighlighting, defaultHighlightStyle, HighlightStyle } from "@codemirror/language";
 import { closeBrackets, closeBracketsKeymap, autocompletion } from "@codemirror/autocomplete";
+import { tags as t } from "@lezer/highlight";
+import { useTheme } from "@/components/theme-provider";
 
 const setActiveLine = StateEffect.define<number | null>();
 
@@ -47,6 +49,56 @@ const baseTheme = EditorView.theme({
   "&.cm-focused": { outline: "none" },
 });
 
+/** Light-mode editor chrome, tuned to the app's light palette. */
+const lightEditorTheme = EditorView.theme({
+  "&": { color: "var(--color-foreground)" },
+  ".cm-gutters": { color: "color-mix(in oklab, var(--color-foreground) 55%, transparent)" },
+  ".cm-selectionBackground, &.cm-focused .cm-selectionBackground": {
+    backgroundColor: "color-mix(in oklab, var(--color-secondary) 26%, transparent)",
+  },
+  ".cm-activeLine": {
+    backgroundColor: "color-mix(in oklab, var(--color-primary) 7%, transparent)",
+  },
+  ".cm-activeLineGutter": { backgroundColor: "transparent" },
+  ".cm-cursor": { borderLeftColor: "var(--color-foreground)" },
+  ".cm-matchingBracket": {
+    backgroundColor: "color-mix(in oklab, var(--color-primary) 20%, transparent)",
+    outline: "none",
+  },
+});
+
+/** Light-mode syntax colors, matching the light accent palette. */
+const lightHighlight = HighlightStyle.define([
+  { tag: t.keyword, color: "var(--color-secondary)" },
+  { tag: [t.name, t.deleted, t.character, t.propertyName, t.macroName], color: "var(--color-foreground)" },
+  { tag: [t.function(t.variableName), t.labelName], color: "var(--color-secondary)" },
+  { tag: [t.color, t.constant(t.name), t.standard(t.name)], color: "var(--color-warning)" },
+  { tag: [t.definition(t.name), t.separator], color: "var(--color-foreground)" },
+  {
+    tag: [t.typeName, t.className, t.number, t.changed, t.annotation, t.modifier, t.self, t.namespace],
+    color: "var(--color-microtask)",
+  },
+  {
+    tag: [t.operator, t.operatorKeyword, t.url, t.escape, t.regexp, t.link, t.special(t.string)],
+    color: "var(--color-warning)",
+  },
+  { tag: [t.meta, t.comment], color: "var(--color-muted-foreground)" },
+  { tag: t.strong, fontWeight: "bold" },
+  { tag: t.emphasis, fontStyle: "italic" },
+  { tag: t.strikethrough, textDecoration: "line-through" },
+  { tag: t.link, textDecoration: "underline" },
+  { tag: t.heading, fontWeight: "bold", color: "var(--color-secondary)" },
+  { tag: [t.atom, t.bool, t.special(t.variableName)], color: "var(--color-api)" },
+  { tag: [t.processingInstruction, t.string, t.inserted], color: "var(--color-microtask)" },
+  { tag: t.invalid, color: "var(--color-destructive)" },
+]);
+
+const themeCompartment = new Compartment();
+
+function editorTheme(theme: "dark" | "light"): Extension {
+  return theme === "dark" ? oneDark : [lightEditorTheme, syntaxHighlighting(lightHighlight)];
+}
+
 type Props = {
   value: string;
   onChange?: (value: string) => void;
@@ -67,6 +119,7 @@ export default function CodeEditor({
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const lastActiveLineRef = useRef<number | null>(null);
+  const { theme } = useTheme();
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const onRunRef = useRef(onRun);
@@ -84,7 +137,7 @@ export default function CodeEditor({
       highlightActiveLine(),
       syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
       javascript({ typescript: false }),
-      oneDark,
+      themeCompartment.of(editorTheme(theme)),
       baseTheme,
       activeLineField,
       keymap.of([
@@ -117,6 +170,13 @@ export default function CodeEditor({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [readOnly]);
+
+  // Swap the CodeMirror theme without rebuilding the editor or losing state.
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({ effects: themeCompartment.reconfigure(editorTheme(theme)) });
+  }, [theme]);
 
   useEffect(() => {
     const view = viewRef.current;
