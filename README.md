@@ -46,7 +46,7 @@ MIT — see LICENSE.
 
 ## About
 
-A small interactive showcase of JavaScript execution and async behavior, with a low-key note that the project was developed using Lovable as the toolchain workflow.
+A small interactive showcase of JavaScript execution and async behavior.
 
 ### Credits
 

@@ -1,4 +1,5 @@
-export const SITE_ORIGIN = "https://js-timeline-explore.lovable.app";
+// TODO: update once the Vercel domain is live, then re-run npm run generate:sitemap
+export const SITE_ORIGIN = "https://js-timeline-explore.vercel.app";
 export const SITE_TITLE = "runtime.js — an interactive tour of JavaScript itself";
 export const SITE_DESCRIPTION =
   "A DevTools-styled walk through JavaScript's eras, with a real sandboxed REPL and an event loop visualizer driven by actual instrumentation of your code.";
