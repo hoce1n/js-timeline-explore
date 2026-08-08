@@ -73,7 +73,7 @@ export function Timeline({
                   className={`flex w-full items-center gap-2 border-l-2 px-2.5 py-2 text-left text-xs transition-colors ${
                     active
                       ? "border-l-primary bg-accent text-foreground"
-                      : "border-l-transparent text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                      : "border-l-transparent text-muted-foreground hover:bg-accent/50 hover:text-foreground active:bg-accent/70"
                   }`}
                 >
                   <span className="w-4 shrink-0 text-[10px] text-muted-foreground">
@@ -141,10 +141,10 @@ function ConceptRow({
       <button
         onClick={onToggle}
         aria-expanded={open}
-        className="flex w-full items-center gap-2 text-left"
+        className="group flex w-full items-center gap-2 rounded-sm px-1.5 py-1 text-left transition-colors hover:bg-accent/40 active:bg-accent/60"
       >
         <ChevronRight
-          className={`size-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`}
+          className={`size-4 shrink-0 text-muted-foreground transition-all group-hover:text-foreground ${open ? "rotate-90 text-foreground" : ""}`}
         />
         <h3 className="text-sm font-medium text-foreground">{concept.name}</h3>
         {concept.ecosystem && (

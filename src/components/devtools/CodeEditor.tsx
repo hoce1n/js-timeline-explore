@@ -42,6 +42,7 @@ const baseTheme = EditorView.theme({
   ".cm-exec-line": {
     backgroundColor: "color-mix(in oklab, var(--color-primary) 16%, transparent)",
     boxShadow: "inset 2px 0 0 0 var(--color-primary)",
+    animation: "exec-line-in 220ms ease-out both",
   },
   "&.cm-focused": { outline: "none" },
 });
@@ -65,6 +66,7 @@ export default function CodeEditor({
 }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const lastActiveLineRef = useRef<number | null>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const onRunRef = useRef(onRun);
@@ -128,6 +130,17 @@ export default function CodeEditor({
     const view = viewRef.current;
     if (!view) return;
     view.dispatch({ effects: setActiveLine.of(activeLine ?? null) });
+    if (!activeLine || activeLine < 1 || activeLine > view.state.doc.lines) {
+      lastActiveLineRef.current = null;
+      return;
+    }
+    if (lastActiveLineRef.current === activeLine) return;
+    lastActiveLineRef.current = activeLine;
+    const line = view.state.doc.line(activeLine);
+    const block = view.lineBlockAt(line.from);
+    const scroller = view.scrollDOM;
+    const target = Math.max(0, block.top - (scroller.clientHeight - block.height) / 2);
+    scroller.scrollTo({ top: target, behavior: "smooth" });
   }, [activeLine]);
 
   return <div ref={hostRef} className="h-full overflow-auto" style={{ minHeight: minHeight ?? "220px" }} />;
