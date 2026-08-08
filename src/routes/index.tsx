@@ -10,8 +10,9 @@ import { SITE_ORIGIN, SITE_TITLE, SITE_DESCRIPTION } from "@/lib/seo";
 const Workbench = lazy(() => import("@/components/devtools/Workbench"));
 
 export const Route = createFileRoute("/")({
-  validateSearch: (search: Record<string, unknown>): { tab: Tab } => ({
+  validateSearch: (search: Record<string, unknown>): { tab: Tab; focusPattern?: string } => ({
     tab: search.tab === "loop" || search.tab === "console" ? search.tab : "timeline",
+    focusPattern: typeof search.focusPattern === "string" ? search.focusPattern : undefined,
   }),
   head: () => ({
     meta: [
@@ -32,7 +33,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { tab } = Route.useSearch();
+  const { tab, focusPattern } = Route.useSearch();
   const navigate = useNavigate();
   const [activeEra, setActiveEra] = useState(() => ERAS[0]!.id);
   const [expandedConcept, setExpandedConcept] = useState<string | null>(null);
@@ -67,12 +68,18 @@ function Index() {
     navigate({ to: "/", search: { tab: "console" } });
   };
 
+  const consumeFocusPattern = () => {
+    navigate({ to: "/", search: { tab } });
+  };
+
   return (
     <AppShell tab={tab} onTabChange={(next) => navigate({ to: "/", search: { tab: next } })}>
       {tab === "timeline" && (
         <SourcesView
           activeEra={activeEra}
           expandedConcept={expandedConcept}
+          focusedPattern={focusPattern}
+          onConsumeFocusedPattern={consumeFocusPattern}
           onSelectEra={setActiveEra}
           onToggleConcept={setExpandedConcept}
           onRun={runInConsole}
