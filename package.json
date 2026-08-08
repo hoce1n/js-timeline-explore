@@ -7,8 +7,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "bun run scripts/generate-sitemap.ts && vite build",
     "build:dev": "vite build --mode development",
+    "generate:sitemap": "bun run scripts/generate-sitemap.ts",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "bun test",

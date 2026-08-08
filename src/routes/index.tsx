@@ -5,7 +5,7 @@ import { AppShell, type Tab } from "@/components/devtools/AppShell";
 import { SourcesView } from "@/components/devtools/SourcesView";
 import { ERAS, REPL_EXAMPLES } from "@/lib/js-eras";
 import { encodeCode, readCodeFromHash } from "@/lib/share";
-import { SITE_ORIGIN, SITE_TITLE, SITE_DESCRIPTION } from "@/lib/seo";
+import { SITE_ORIGIN, SITE_TITLE, SITE_DESCRIPTION, websiteJsonLd } from "@/lib/seo";
 
 const Workbench = lazy(() => import("@/components/devtools/Workbench"));
 
@@ -27,6 +27,7 @@ export const Route = createFileRoute("/")({
       { name: "twitter:description", content: SITE_DESCRIPTION },
       { name: "twitter:image", content: `${SITE_ORIGIN}/og-image.png` },
     ],
+    scripts: [{ type: "application/ld+json", children: JSON.stringify(websiteJsonLd()) }],
   }),
   component: Index,
 });
