@@ -1,5 +1,6 @@
 import { useRef, type KeyboardEvent, type ReactNode } from "react";
 import { Github, Instagram, Linkedin, Send } from "lucide-react";
+import { SiteSearch } from "./SiteSearch";
 
 export type Tab = "timeline" | "loop" | "console";
 
@@ -71,7 +72,8 @@ export function AppShell({
           <p className="hidden text-[11.5px] text-muted-foreground sm:block">
             the language, its eras, and the loop that runs it
           </p>
-          <p className="ml-auto text-[11px] text-muted-foreground">
+          <SiteSearch />
+          <p className="ml-auto hidden text-[11px] text-muted-foreground sm:block">
             executes in a sandboxed iframe · never <code className="text-destructive">eval</code>{" "}
             on this page
           </p>
