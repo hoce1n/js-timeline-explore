@@ -4,12 +4,16 @@ import { PatternLibrary } from "./PatternLibrary";
 export function SourcesView({
   activeEra,
   expandedConcept,
+  focusedPattern,
+  onConsumeFocusedPattern,
   onSelectEra,
   onToggleConcept,
   onRun,
 }: {
   activeEra: string;
   expandedConcept: string | null;
+  focusedPattern?: string;
+  onConsumeFocusedPattern?: () => void;
   onSelectEra: (eraId: string) => void;
   onToggleConcept: (conceptId: string | null) => void;
   onRun: (code: string) => void;
@@ -36,7 +40,11 @@ export function SourcesView({
         />
       </div>
       <div className="mt-8">
-        <PatternLibrary onRun={onRun} />
+        <PatternLibrary
+          onRun={onRun}
+          focusedPattern={focusedPattern}
+          onConsumeFocusedPattern={onConsumeFocusedPattern}
+        />
       </div>
     </>
   );
