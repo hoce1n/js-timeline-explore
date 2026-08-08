@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ChevronRight, Play } from "lucide-react";
 import { ERAS, type Concept } from "@/lib/js-eras";
 import { CodeBlock } from "./CodeBlock";
+import { CopyButton } from "./CopyButton";
 
 const RUNTIME_COLOR: Record<string, string> = {
   V8: "text-warning",
@@ -135,9 +136,16 @@ function ConceptRow({ concept, onRun }: { concept: Concept; onRun: (code: string
                       <td className="px-3 py-2 leading-relaxed text-panel-foreground">
                         {row.note}
                         {row.code && (
-                          <pre className="mt-1.5 overflow-x-auto rounded-sm border border-border/60 bg-panel/80 px-2 py-1.5 font-mono text-[11px] leading-relaxed text-panel-foreground">
-                            <code>{row.code.trim()}</code>
-                          </pre>
+                          <div className="relative mt-1.5">
+                            <pre className="overflow-x-auto rounded-sm border border-border/60 bg-panel/80 px-2 py-1.5 font-mono text-[11px] leading-relaxed text-panel-foreground">
+                              <code>{row.code.trim()}</code>
+                            </pre>
+                            <CopyButton
+                              text={row.code.trim()}
+                              label={`Copy ${row.runtime} snippet`}
+                              className="absolute right-1.5 top-1.5"
+                            />
+                          </div>
                         )}
                       </td>
                     </tr>
