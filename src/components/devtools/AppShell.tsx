@@ -1,6 +1,14 @@
 import { useRef, type KeyboardEvent, type ReactNode } from "react";
+import { Github, Instagram, Linkedin, Send } from "lucide-react";
 
 export type Tab = "timeline" | "loop" | "console";
+
+const SOCIALS = [
+  { label: "GitHub", href: "https://github.com/hoce1n", Icon: Github },
+  { label: "LinkedIn", href: "https://www.linkedin.com/in/hocein/", Icon: Linkedin },
+  { label: "Instagram", href: "https://www.instagram.com/hoce1n/", Icon: Instagram },
+  { label: "Telegram", href: "https://t.me/hoce1n", Icon: Send },
+];
 
 export const TABS: { id: Tab; label: string; hint: string }[] = [
   { id: "timeline", label: "Sources", hint: "eras & concepts" },
@@ -116,14 +124,39 @@ export function AppShell({
       </main>
 
       <footer className="mt-8 border-t border-border bg-panel">
-        <div className="mx-auto max-w-350 px-4 py-5 text-[11.5px] leading-relaxed text-muted-foreground">
-          <p>
-            <span className="text-destructive">Uncaught TypeError:</span> Cannot read properties
-            of null (reading &apos;author&apos;)
-          </p>
-          <p className="mt-1 pl-4 text-muted-foreground/70">
-            at Footer (runtime.js:1:1) — this site is about the language, not a person.
-          </p>
+        <div className="mx-auto flex max-w-350 flex-wrap items-center gap-x-2.5 gap-y-1.5 px-4 py-4 text-[11px] text-muted-foreground">
+          <span>
+            built by{" "}
+            <a
+              href="https://github.com/hoce1n"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-foreground/80 transition-colors hover:text-primary"
+            >
+              hocein
+            </a>
+          </span>
+          <span aria-hidden className="text-muted-foreground/40">
+            ·
+          </span>
+          <span className="flex items-center gap-2.5">
+            {SOCIALS.map(({ label, href, Icon }) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={label}
+                title={label}
+                className="text-muted-foreground/70 transition-colors hover:text-primary"
+              >
+                <Icon className="size-3.5" />
+              </a>
+            ))}
+          </span>
+          <span className="ml-auto hidden text-muted-foreground/50 sm:inline">
+            runtime.js · an interactive tour of JavaScript
+          </span>
         </div>
       </footer>
     </div>
