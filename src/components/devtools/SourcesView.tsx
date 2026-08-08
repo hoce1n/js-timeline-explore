@@ -12,8 +12,8 @@ export function SourcesView({
 }: {
   activeEra: string;
   expandedConcept: string | null;
-  focusedPattern?: string;
-  onConsumeFocusedPattern?: () => void;
+  focusedPattern?: string | undefined;
+  onConsumeFocusedPattern?: (() => void) | undefined;
   onSelectEra: (eraId: string) => void;
   onToggleConcept: (conceptId: string | null) => void;
   onRun: (code: string) => void;

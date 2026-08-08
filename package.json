@@ -11,6 +11,7 @@
     "build:dev": "vite build --mode development",
     "generate:sitemap": "bun run scripts/generate-sitemap.ts",
     "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "bun test",
     "format": "prettier --write ."

@@ -10,9 +10,10 @@ import { SITE_ORIGIN, SITE_TITLE, SITE_DESCRIPTION, websiteJsonLd } from "@/lib/
 const Workbench = lazy(() => import("@/components/devtools/Workbench"));
 
 export const Route = createFileRoute("/")({
-  validateSearch: (search: Record<string, unknown>): { tab: Tab; focusPattern?: string } => ({
-    tab: search.tab === "loop" || search.tab === "console" ? search.tab : "timeline",
-    focusPattern: typeof search.focusPattern === "string" ? search.focusPattern : undefined,
+  validateSearch: (search: Record<string, unknown>): { tab: Tab; focusPattern?: string | undefined } => ({
+    tab: search["tab"] === "loop" || search["tab"] === "console" ? search["tab"] : "timeline",
+    focusPattern:
+      typeof search["focusPattern"] === "string" ? search["focusPattern"] : undefined,
   }),
   head: () => ({
     meta: [

@@ -20,8 +20,8 @@ export function PatternLibrary({
   onConsumeFocusedPattern,
 }: {
   onRun: (code: string) => void;
-  focusedPattern?: string;
-  onConsumeFocusedPattern?: () => void;
+  focusedPattern?: string | undefined;
+  onConsumeFocusedPattern?: (() => void) | undefined;
 }) {
   const total = INTERVIEW_PATTERNS.length;
 
@@ -75,7 +75,7 @@ function PatternRow({
   pattern: InterviewPattern;
   onRun: (code: string) => void;
   focused: boolean;
-  onConsumeFocus?: () => void;
+  onConsumeFocus?: (() => void) | undefined;
 }) {
   const [open, setOpen] = useState(false);
 

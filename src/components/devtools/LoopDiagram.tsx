@@ -153,7 +153,7 @@ function PendingLane({ items, idle }: { items: QueueItem[]; idle: boolean }) {
         <div className="flex flex-wrap items-center gap-1.5">
           {items.map((item) => (
             <span
-              key={item.key}
+              key={`p${item.id}`}
               className="inline-flex max-w-full items-center rounded-sm border border-api bg-api/10 px-2 py-1 text-[11px] text-api"
             >
               <span className="min-w-0 truncate">{item.label}</span>
