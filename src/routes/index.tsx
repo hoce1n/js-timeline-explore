@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ClientOnly } from "@tanstack/react-router";
 import { Timeline } from "@/components/devtools/Timeline";
-import { CompareLoupe } from "@/components/devtools/CompareLoupe";
 import { REPL_EXAMPLES } from "@/lib/js-eras";
 import { encodeCode, readCodeFromHash } from "@/lib/share";
 
@@ -135,7 +134,6 @@ function Index() {
             <div className="overflow-hidden rounded-sm border border-border">
               <Timeline onRun={runInConsole} />
             </div>
-            <CompareLoupe />
           </>
         )}
 
