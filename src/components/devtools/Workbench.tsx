@@ -3,6 +3,7 @@ import { Play, Pause, SkipBack, SkipForward, RotateCcw, Square, Zap, Terminal, T
 import { useSandbox } from "@/hooks/use-sandbox";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { deriveState, describeEvent } from "@/lib/event-loop";
+import { LoopDiagram } from "./LoopDiagram";
 import { REPL_EXAMPLES } from "@/lib/js-eras";
 import { buildShareUrl, copyText } from "@/lib/share";
 import { track } from "@/lib/analytics";
@@ -331,10 +332,6 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
             >
               <Trash2 className="size-3" /> clear
             </button>
-          ) : state.heap ? (
-            <span className="ml-auto text-[11px]">
-              heap {(state.heap.used / 1048576).toFixed(1)} MB
-            </span>
           ) : null}
         </div>
 
@@ -432,43 +429,79 @@ function LoopPanel({
   state: ReturnType<typeof deriveState>;
   traceLength: number;
 }) {
+  const [view, setView] = useState<"text" | "diagram">("text");
+
   return (
-    <div className="grid min-h-0 flex-1 grid-rows-[1fr_1fr_1fr_1fr_auto] divide-y divide-border">
-      <Lane
-        title="Call Stack"
-        hint="LIFO — top frame is executing"
-        color="text-stack"
-        border="border-l-stack"
-        items={[...state.stack].reverse().map((f) => ({
-          key: f.key,
-          label: f.name + (f.line ? `  · line ${f.line}` : ""),
-        }))}
-        empty={traceLength === 0 ? "idle" : "empty — run to completion"}
-      />
-      <Lane
-        title="Web APIs"
-        hint="in-flight handles — timers, fetch"
-        color="text-api"
-        border="border-l-api"
-        items={state.pending.map((p, i) => ({ key: `${p.id}-${i}`, label: p.label }))}
-        empty="no pending handles"
-      />
-      <Lane
-        title="Microtask Queue"
-        hint="drains fully before the next task"
-        color="text-microtask"
-        border="border-l-microtask"
-        items={state.microtasks.map((m, i) => ({ key: `${m.id}-${i}`, label: m.label }))}
-        empty="empty"
-      />
-      <Lane
-        title="Macrotask Queue"
-        hint="one task per loop turn"
-        color="text-macrotask"
-        border="border-l-macrotask"
-        items={state.macrotasks.map((m, i) => ({ key: `${m.id}-${i}`, label: m.label }))}
-        empty="empty"
-      />
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex items-center gap-2 border-b border-border bg-panel px-3 py-1.5">
+        <span className="text-[10.5px] uppercase tracking-widest text-muted-foreground">
+          view
+        </span>
+        <div className="flex overflow-hidden rounded-sm border border-border">
+          {(["text", "diagram"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              aria-pressed={view === v}
+              className={`px-2 py-0.5 text-[11px] transition-colors ${
+                view === v
+                  ? "bg-secondary text-secondary-foreground"
+                  : "bg-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {v === "text" ? "lanes" : "diagram"}
+            </button>
+          ))}
+        </div>
+        {state.heap && (
+          <span className="ml-auto text-[11px]">
+            heap {(state.heap.used / 1048576).toFixed(1)} MB
+          </span>
+        )}
+      </div>
+
+      {view === "diagram" ? (
+        <LoopDiagram state={state} traceLength={traceLength} />
+      ) : (
+        <div className="grid min-h-0 flex-1 grid-rows-[1fr_1fr_1fr_1fr_auto] divide-y divide-border">
+          <Lane
+            title="Call Stack"
+            hint="LIFO — top frame is executing"
+            color="text-stack"
+            border="border-l-stack"
+            items={[...state.stack].reverse().map((f) => ({
+              key: f.key,
+              label: f.name + (f.line ? `  · line ${f.line}` : ""),
+            }))}
+            empty={traceLength === 0 ? "idle" : "empty — run to completion"}
+          />
+          <Lane
+            title="Web APIs"
+            hint="in-flight handles — timers, fetch"
+            color="text-api"
+            border="border-l-api"
+            items={state.pending.map((p, i) => ({ key: `${p.id}-${i}`, label: p.label }))}
+            empty="no pending handles"
+          />
+          <Lane
+            title="Microtask Queue"
+            hint="drains fully before the next task"
+            color="text-microtask"
+            border="border-l-microtask"
+            items={state.microtasks.map((m, i) => ({ key: `${m.id}-${i}`, label: m.label }))}
+            empty="empty"
+          />
+          <Lane
+            title="Macrotask Queue"
+            hint="one task per loop turn"
+            color="text-macrotask"
+            border="border-l-macrotask"
+            items={state.macrotasks.map((m, i) => ({ key: `${m.id}-${i}`, label: m.label }))}
+            empty="empty"
+          />
+        </div>
+      )}
+
       <div className="bg-panel px-3 py-2 text-[11px] text-muted-foreground">
         {traceLength === 0
           ? "No trace recorded. Every frame and queue entry below comes from your code's real execution."
