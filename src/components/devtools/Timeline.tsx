@@ -132,7 +132,14 @@ function ConceptRow({ concept, onRun }: { concept: Concept; onRun: (code: string
                       >
                         {row.runtime}
                       </th>
-                      <td className="px-3 py-2 leading-relaxed text-panel-foreground">{row.note}</td>
+                      <td className="px-3 py-2 leading-relaxed text-panel-foreground">
+                        {row.note}
+                        {row.code && (
+                          <pre className="mt-1.5 overflow-x-auto rounded-sm border border-border/60 bg-panel/80 px-2 py-1.5 font-mono text-[11px] leading-relaxed text-panel-foreground">
+                            <code>{row.code.trim()}</code>
+                          </pre>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
