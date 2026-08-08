@@ -1,6 +1,8 @@
 export type EcosystemRow = {
   runtime: "V8" | "Node.js" | "Deno" | "Bun";
   note: string;
+  /** Real, per-runtime code that shows the difference in practice. */
+  code?: string;
 };
 
 export type Concept = {
@@ -333,18 +335,25 @@ console.log("sync");`,
             {
               runtime: "V8",
               note: "Ships no event loop at all. It exposes a microtask queue and expects the embedder to pump it.",
+              code: `// no timers or I/O phases —
+// the embedder pumps the microtask queue`,
             },
             {
               runtime: "Node.js",
               note: "libuv phases: timers → pending → poll → check (`setImmediate`) → close. `setImmediate` fires after I/O, `setTimeout(fn, 0)` before it.",
+              code: `setImmediate(() => {});     // check phase: after I/O, before close
+process.nextTick(() => {}); // before ANY promise microtask`,
             },
             {
               runtime: "Deno",
               note: "Rust + Tokio. No `setImmediate` in the native API surface (only via the Node compatibility layer); web timers are the primitive.",
+              code: `await new Promise((r) => setTimeout(r, 0));
+// web timers only — no setImmediate`,
             },
             {
               runtime: "Bun",
               note: "Custom loop on JavaScriptCore. Implements Node's `setImmediate` for compatibility; timer latency is generally lower under load.",
+              code: `setImmediate(() => {}); // implemented for Node compatibility`,
             },
           ],
         },
@@ -433,18 +442,31 @@ import local from "./util.js";`,
             {
               runtime: "V8",
               note: "Provides a resolution *hook* only. The embedder answers 'what does this specifier mean'.",
+              code: `// the engine has no module paths of its own —
+// the embedder supplies the resolution hook`,
             },
             {
               runtime: "Node.js",
               note: "node_modules walk + `exports`/`imports` maps in package.json. File extensions are mandatory in ESM; `node:` prefix for builtins.",
+              code: `// package.json "exports" map + node_modules walk
+import { readFile } from "node:fs/promises";
+import chalk from "chalk";`,
             },
             {
               runtime: "Deno",
               note: "URL-first: remote https imports, import maps, and JSR. npm packages via the `npm:` specifier, cached rather than installed into a folder.",
+              code: `// deno.json import map; URLs, JSR, or npm: specifiers
+import { readFile } from "node:fs/promises";
+import { serve } from "https://deno.land/std/http/server.ts";
+import chalk from "npm:chalk@5";`,
             },
             {
               runtime: "Bun",
               note: "Node-compatible resolution with extension guessing, plus native TypeScript and JSX loading with no build step.",
+              code: `// node_modules walk + extension guessing (no build step)
+import { readFile } from "node:fs/promises";
+import chalk from "chalk";
+import config from "./config.json";`,
             },
           ],
         },
@@ -528,10 +550,14 @@ console.log("importers of this module waited for it");`,
         ecosystem: {
           title: "Top-level await support",
           rows: [
-            { runtime: "V8", note: "Implemented at the engine level since V8 8.9; requires the host to use the async module evaluation API." },
-            { runtime: "Node.js", note: "Works in `.mjs` / `\"type\": \"module\"` files. Unavailable in CommonJS — a common migration blocker." },
-            { runtime: "Deno", note: "Available everywhere, including the REPL, since all modules are ESM by default." },
-            { runtime: "Bun", note: "Supported in both ESM and its CommonJS interop layer, which transparently wraps CJS files." },
+            { runtime: "V8", note: "Implemented at the engine level since V8 8.9; requires the host to use the async module evaluation API.", code: `// engine feature since 8.9 — the host must opt in
+// to the async module evaluation API` },
+            { runtime: "Node.js", note: "Works in `.mjs` / `\"type\": \"module\"` files. Unavailable in CommonJS — a common migration blocker.", code: `// main.mjs — ESM only; throws in CommonJS
+const data = await fetch("https://example.com/api");` },
+            { runtime: "Deno", note: "Available everywhere, including the REPL, since all modules are ESM by default.", code: `// works in every module and the REPL
+const data = await fetch("https://example.com/api");` },
+            { runtime: "Bun", note: "Supported in both ESM and its CommonJS interop layer, which transparently wraps CJS files.", code: `// ESM and the CJS interop layer both support it
+const data = await fetch("https://example.com/api");` },
           ],
         },
       },
@@ -636,18 +662,58 @@ console.log("Common everywhere: fetch");`,
             {
               runtime: "V8",
               note: "No I/O APIs at all — `fs`, `net`, `http`, even `console` and `setTimeout` are supplied by the host. The engine cannot open a file by itself.",
+              code: `// the engine can't open a file —
+// fs/net/http are host APIs, not language features`,
             },
             {
               runtime: "Node.js",
               note: "The original server stdlib: `fs`, `http`, `net`, `crypto`, `child_process` under the `node:` namespace. Callback-first heritage, promisified in `node:fs/promises`.",
+              code: `import { readFile } from "node:fs/promises";
+const text = await readFile("config.json", "utf8");`,
             },
             {
               runtime: "Deno",
               note: "`Deno.*` globals (`Deno.readTextFile`, `Deno.serve`, `Deno.Kv`) plus a curated standard library on deno.land/std, all behind explicit permission flags.",
+              code: `const text = await Deno.readTextFile("config.json");
+// needs --allow-read`,
             },
             {
               runtime: "Bun",
               note: "`Bun.*` globals (`Bun.file`, `Bun.serve`, `Bun.sql`) plus drop-in Node API compatibility — a faster, batteries-included replacement.",
+              code: `const text = await Bun.file("config.json").text();`,
+            },
+          ],
+        },
+      },
+      {
+        id: "feature-detection",
+        name: "Feature-detect your host",
+        blurb:
+          "Every runtime exposes a different global surface, so portable libraries branch on `typeof`: `process` means Node or Bun, `Deno` means Deno, `Bun` means Bun. Run this in the sandbox and you'll see a browser-like host.",
+        code: `// Feature-detect the host — each runtime exposes different globals:
+console.log("typeof process:", typeof process); // Node.js, Bun
+console.log("typeof Deno:", typeof Deno);       // Deno only
+console.log("typeof Bun:", typeof Bun);         // Bun only
+console.log("typeof fetch:", typeof fetch);     // all modern runtimes
+console.log("typeof window:", typeof window);   // browsers & edge`,
+        ecosystem: {
+          title: "Which globals each host exposes",
+          rows: [
+            {
+              runtime: "V8",
+              note: "Exposes only the language plus whatever the embedder injects onto `globalThis` — the engine itself knows nothing about `process`, `window`, or `Deno`.",
+            },
+            {
+              runtime: "Node.js",
+              note: "`process`, `Buffer`, `require`, `module`, plus web-ish `setTimeout`/`fetch`. No `window` — the browser globals are deliberately absent.",
+            },
+            {
+              runtime: "Deno",
+              note: "A `Deno` namespace plus the Web standard globals on `globalThis`. `process` exists only inside the Node compatibility layer.",
+            },
+            {
+              runtime: "Bun",
+              note: "A `Bun` namespace AND the full Node global surface (`process`, `Buffer`, `require`) plus Web APIs — the widest set of the three.",
             },
           ],
         },
