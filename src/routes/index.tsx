@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ClientOnly } from "@tanstack/react-router";
 import { Timeline } from "@/components/devtools/Timeline";
+import { PatternLibrary } from "@/components/devtools/PatternLibrary";
 import { REPL_EXAMPLES } from "@/lib/js-eras";
 import { encodeCode, readCodeFromHash } from "@/lib/share";
 
@@ -133,6 +134,9 @@ function Index() {
             </section>
             <div className="overflow-hidden rounded-sm border border-border">
               <Timeline onRun={runInConsole} />
+            </div>
+            <div className="mt-8">
+              <PatternLibrary onRun={runInConsole} />
             </div>
           </>
         )}
