@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { ChevronRight, Play } from "lucide-react";
 import { ERAS, type Concept } from "@/lib/js-eras";
 import { CodeBlock } from "./CodeBlock";
@@ -10,8 +9,20 @@ const RUNTIME_COLOR: Record<string, string> = {
   Bun: "text-primary",
 };
 
-export function Timeline({ onRun }: { onRun: (code: string) => void }) {
-  const [activeEra, setActiveEra] = useState<string>(ERAS[0]!.id);
+export function Timeline({
+  activeEra,
+  expandedConcept,
+  onSelectEra,
+  onToggleConcept,
+  onRun,
+}: {
+  activeEra: string;
+  expandedConcept: string | null;
+  onSelectEra: (eraId: string) => void;
+  onToggleConcept: (conceptId: string | null) => void;
+  onRun: (code: string) => void;
+}) {
+  const era = ERAS.find((e) => e.id === activeEra) ?? ERAS[0]!;
 
   return (
     <div className="grid gap-px bg-border md:grid-cols-[220px_1fr]">
@@ -21,12 +32,13 @@ export function Timeline({ onRun }: { onRun: (code: string) => void }) {
           Timeline
         </p>
         <ol className="space-y-px">
-          {ERAS.map((era, i) => {
-            const active = era.id === activeEra;
+          {ERAS.map((e, i) => {
+            const active = e.id === era.id;
             return (
-              <li key={era.id}>
+              <li key={e.id}>
                 <button
-                  onClick={() => setActiveEra(era.id)}
+                  onClick={() => onSelectEra(e.id)}
+                  aria-current={active ? "true" : undefined}
                   className={`flex w-full items-center gap-2 border-l-2 px-2.5 py-2 text-left text-xs transition-colors ${
                     active
                       ? "border-l-primary bg-accent text-foreground"
@@ -37,9 +49,9 @@ export function Timeline({ onRun }: { onRun: (code: string) => void }) {
                     {String(i).padStart(2, "0")}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">{era.label}</span>
+                    <span className="block truncate font-medium">{e.label}</span>
                     <span className="block truncate text-[10.5px] text-muted-foreground">
-                      {era.years}
+                      {e.years}
                     </span>
                   </span>
                 </button>
@@ -51,40 +63,52 @@ export function Timeline({ onRun }: { onRun: (code: string) => void }) {
 
       {/* era detail */}
       <div className="bg-card">
-        {ERAS.filter((e) => e.id === activeEra).map((era) => (
-          <article key={era.id} className="p-5 md:p-7">
-            <header className="border-b border-border pb-5">
-              <div className="flex flex-wrap items-baseline gap-3">
-                <h2 className="text-xl font-bold text-primary">{era.label}</h2>
-                <span className="rounded-sm border border-secondary/50 px-1.5 py-0.5 text-[10.5px] text-secondary">
-                  {era.spec}
-                </span>
-                <span className="text-xs text-muted-foreground">{era.years}</span>
-              </div>
-              <p className="mt-3 max-w-3xl text-sm leading-relaxed text-panel-foreground">
-                {era.summary}
-              </p>
-            </header>
-
-            <div className="divide-y divide-border">
-              {era.concepts.map((concept) => (
-                <ConceptRow key={concept.id} concept={concept} onRun={onRun} />
-              ))}
+        <article key={era.id} className="p-5 md:p-7">
+          <header className="border-b border-border pb-5">
+            <div className="flex flex-wrap items-baseline gap-3">
+              <h2 className="text-xl font-bold text-primary">{era.label}</h2>
+              <span className="rounded-sm border border-secondary/50 px-1.5 py-0.5 text-[10.5px] text-secondary">
+                {era.spec}
+              </span>
+              <span className="text-xs text-muted-foreground">{era.years}</span>
             </div>
-          </article>
-        ))}
+            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-panel-foreground">
+              {era.summary}
+            </p>
+          </header>
+
+          <div className="divide-y divide-border">
+            {era.concepts.map((concept) => (
+              <ConceptRow
+                key={concept.id}
+                concept={concept}
+                open={expandedConcept === concept.id}
+                onToggle={() => onToggleConcept(expandedConcept === concept.id ? null : concept.id)}
+                onRun={onRun}
+              />
+            ))}
+          </div>
+        </article>
       </div>
     </div>
   );
 }
 
-function ConceptRow({ concept, onRun }: { concept: Concept; onRun: (code: string) => void }) {
-  const [open, setOpen] = useState(false);
-
+function ConceptRow({
+  concept,
+  open,
+  onToggle,
+  onRun,
+}: {
+  concept: Concept;
+  open: boolean;
+  onToggle: () => void;
+  onRun: (code: string) => void;
+}) {
   return (
     <section className="py-4">
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={onToggle}
         aria-expanded={open}
         className="flex w-full items-center gap-2 text-left"
       >

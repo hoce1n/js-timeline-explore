@@ -30,6 +30,11 @@ export function buildShareUrl(code: string): string {
   return `${window.location.origin}${window.location.pathname}${HASH_PREFIX}${encodeCode(code)}`;
 }
 
+/** The `#code=<base64>` hash fragment alone, for building cross-page links. */
+export function buildShareHash(code: string): string {
+  return `${HASH_PREFIX}${encodeCode(code)}`;
+}
+
 /** Copy text to the clipboard with a legacy fallback for insecure contexts. */
 export async function copyText(text: string): Promise<void> {
   try {
