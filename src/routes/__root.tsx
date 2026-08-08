@@ -81,6 +81,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "author", content: "runtime.js" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "theme-color", content: "#1e1e1e" },
+      { name: "apple-mobile-web-app-title", content: "runtime.js" },
+
     ],
     links: [
       {
