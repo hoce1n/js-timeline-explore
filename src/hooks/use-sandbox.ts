@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SANDBOX_HTML, type SandboxEvent } from "@/lib/sandbox";
-import { instrument } from "@/lib/instrument";
 
 const MAX_EVENTS = 4000;
 const RUN_TIMEOUT_MS = 6000;
@@ -94,11 +93,14 @@ export function useSandbox() {
   }, [mount]);
 
 
-  const run = useCallback((source: string) => {
-    const result = instrument(source);
+  const run = useCallback(async (source: string) => {
     runIdRef.current += 1;
     bufferRef.current = [];
     truncatedRef.current = false;
+    // acorn (the parser behind instrumentation) is the heaviest remaining
+    // piece — load it lazily so it only downloads on the first Run/Record.
+    const { instrument } = await import("@/lib/instrument");
+    const result = instrument(source);
     if (!result.ok) {
       setTrace([
         {

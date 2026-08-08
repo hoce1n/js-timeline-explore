@@ -1,12 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Play, Pause, SkipBack, SkipForward, RotateCcw, Square, Zap, Terminal, Trash2, Link2, Check } from "lucide-react";
-import CodeEditor from "./CodeEditor";
 import { useSandbox } from "@/hooks/use-sandbox";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { deriveState, describeEvent } from "@/lib/event-loop";
 import { REPL_EXAMPLES } from "@/lib/js-eras";
 import { buildShareUrl, copyText } from "@/lib/share";
 import { track } from "@/lib/analytics";
+
+// CodeMirror is the heaviest dependency in the Workbench — keep it in its own
+// async chunk so the rest of the sandbox UI loads before the editor.
+const CodeEditor = lazy(() => import("./CodeEditor"));
 
 type Props = {
   code: string;
@@ -219,13 +222,21 @@ export default function Workbench({ code, onCodeChange, view }: Props) {
         </div>
 
         <div className="min-h-0 flex-1">
-          <CodeEditor
-            value={code}
-            onChange={onCodeChange}
-            onRun={handleRun}
-            activeLine={mode === "step" ? (state.currentLine ?? null) : null}
-            minHeight={isMobile ? "220px" : "440px"}
-          />
+          <Suspense
+            fallback={
+              <div className="flex h-full min-h-[220px] items-center justify-center text-sm text-muted-foreground">
+                loading editor…
+              </div>
+            }
+          >
+            <CodeEditor
+              value={code}
+              onChange={onCodeChange}
+              onRun={handleRun}
+              activeLine={mode === "step" ? (state.currentLine ?? null) : null}
+              minHeight={isMobile ? "220px" : "440px"}
+            />
+          </Suspense>
         </div>
 
         {canStep && (
